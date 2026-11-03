@@ -295,7 +295,7 @@
   <a id="home" class="home" hidden>&larr; <span>Back to site</span></a>
   <header>
     <img id="logo" class="logo" alt="" hidden>
-    <p class="eyebrow">DJ sign-up</p>
+    <p id="eyebrow" class="eyebrow">DJ sign-up</p>
     <h1 id="event-name" class="title"><span class="name">CT Open Decks</span></h1>
     <p id="event-date" class="date" hidden></p>
     <p id="lede" class="lede">Pick a slot in either room, add your details, and you're on the lineup. First come, first served.</p>
@@ -391,17 +391,21 @@ const $ = (id) => document.getElementById(id);
 const dialog = $('dialog');
 const form = $('form');
 
+// The in-person page: this page with ?in-person on the end (in-person.html sends people here).
+// It signs people up for the next show, and only on show night.
+const IN_PERSON = new URLSearchParams(location.search).has('in-person');
+
 const state = { data: null, error: false, selected: null, busy: false };
 const api = CONFIG.apiUrl ? remoteApi(CONFIG.apiUrl) : demoApi();
 
 // ---- Backend --------------------------------------------------------------
 
 function remoteApi(url) {
-  async function call(options) {
+  async function call(options, query = '') {
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), 20000);
     try {
-      const res = await fetch(url, { ...options, cache: 'no-store', signal: controller.signal });
+      const res = await fetch(url + query, { ...options, cache: 'no-store', signal: controller.signal });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       return await res.json();
     } finally {
@@ -409,7 +413,7 @@ function remoteApi(url) {
     }
   }
   return {
-    load: () => call({ method: 'GET' }),
+    load: () => call({ method: 'GET' }, IN_PERSON ? '?mode=in-person' : ''),
     // Sent as text/plain so the browser doesn't need a CORS preflight, which Apps Script can't answer.
     book: (details) => call({
       method: 'POST',
@@ -539,7 +543,8 @@ function render() {
   const { session } = data.event;
   $('event-name').replaceChildren(el('span', 'name', name));
   if (session) $('event-name').append(' ', el('span', 'session', `Session ${session}`));
-  document.title = session ? `${name} · Session ${session} · Sign-Up` : `${name} Sign-Up`;
+  const kind = IN_PERSON ? 'In-Person Sign-Up' : 'Sign-Up';
+  document.title = session ? `${name} · Session ${session} · ${kind}` : `${name} ${kind}`;
   // Non-breaking space keeps "November 11" together when the date wraps on a phone.
   $('event-date').textContent = data.event.date.replace(/ (\d{1,2})$/, ' $1');
   $('event-date').hidden = !data.event.date;
@@ -549,7 +554,13 @@ function render() {
   $('lede').hidden = !data.signupsOpen || !open;
 
   if (!data.signupsOpen) {
-    renderMessage('Sign-ups are closed', 'Check back soon for the next one.');
+    if (IN_PERSON) {
+      // The show night when these open.
+      const day = showDay(data.opensAt);
+      renderMessage('In-person sign-ups are closed', `They open at the show${day ? ` on ${day}` : ''}.`);
+    } else {
+      renderMessage('Sign-ups are closed', 'Check back soon for the next one.');
+    }
     return;
   }
   if (!open) {
@@ -557,7 +568,9 @@ function render() {
     const day = showDay(data.event.date);
     renderMessage(
       'All slots filled.',
-      `Sign-ups for next month will be available in-person at the next event${day ? ` on ${day}` : ''} before opening online. Online sign-ups open at 5am the next day.`
+      IN_PERSON
+        ? `Every slot for ${day || 'the next show'} is taken.`
+        : `Sign-ups for next month will be available in-person at the next event${day ? ` on ${day}` : ''} before opening online. Online sign-ups open at 5am the next day.`
     );
     return;
   }
@@ -696,6 +709,7 @@ form.addEventListener('submit', async (event) => {
   try {
     result = await api.book({
       slotId: slot.id, name, performanceName, email, instagram, website: form.elements.website.value,
+      mode: IN_PERSON ? 'in-person' : '',
     });
   } catch (err) {
     console.error(err);
@@ -707,7 +721,9 @@ form.addEventListener('submit', async (event) => {
   if (result.ok) {
     state.data.slots = state.data.slots.map((s) => (s.id === slot.id ? { ...s, taken: true } : s));
     render();
-    $('done-slot').textContent = `${slot.time} · ${slot.room}`;
+    // At the show, the date on its own line makes clear it's next month's slot, not tonight's.
+    const date = IN_PERSON && state.data.event.date ? [state.data.event.date, el('br')] : [];
+    $('done-slot').replaceChildren(...date, `${slot.time} · ${slot.room}`);
     $('done-note').textContent = result.confirmationSent ? `A confirmation is on its way to ${email}.` : '';
     form.reset();
     form.hidden = true;
@@ -748,6 +764,8 @@ function loadLogo([file, ...rest]) {
   logo.src = file;
 }
 loadLogo(LOGO_FILES);
+
+if (IN_PERSON) $('eyebrow').textContent = 'In-person sign-up';
 
 if (CONFIG.homeUrl) {
   $('home').href = CONFIG.homeUrl;
