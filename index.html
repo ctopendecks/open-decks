@@ -515,6 +515,16 @@ function renderMessage(title, text, retry) {
   $('slots').replaceChildren(box);
 }
 
+// "Wednesday, December 9" → "December 9th". Blank when the Settings date isn't a real date.
+function showDay(date) {
+  const match = /([A-Za-z]+) (\d{1,2})$/.exec(date || '');
+  if (!match) return '';
+  const day = Number(match[2]);
+  const suffix = day >= 11 && day <= 13 ? 'th' : ['th', 'st', 'nd', 'rd'][day % 10] || 'th';
+  // Non-breaking space keeps "December 9th" on one line.
+  return `${match[1]} ${day}${suffix}`;
+}
+
 function render() {
   const { data } = state;
   $('chips').hidden = true;
@@ -543,9 +553,11 @@ function render() {
     return;
   }
   if (!open) {
+    // The show these sign-ups are for, where next month's lineup is taken in person.
+    const day = showDay(data.event.date);
     renderMessage(
       'All slots filled.',
-      'Sign-ups for next month open in person first, so make sure to come to the next event for the best chance of getting a slot!'
+      `Sign-ups for next month will be available in-person at the next event${day ? ` on ${day}` : ''} before opening online. Online sign-ups open at 5am the next day.`
     );
     return;
   }
