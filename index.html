@@ -233,18 +233,37 @@
     font: 600 0.75rem/1 var(--font-body); letter-spacing: 0.1em; text-transform: uppercase;
     color: rgba(255, 255, 255, 0.86);
   }
+  /* "Type it exactly" notes, on the form and the confirmation. */
+  .heads-up {
+    margin: 1rem 0 0; padding: 0.75rem 0.875rem; border-radius: 0.75rem;
+    background: rgba(242, 200, 121, 0.1); border: 1px solid rgba(242, 200, 121, 0.35);
+    color: #f6e2b8; font-size: 0.8438rem; line-height: 1.45;
+  }
+  .heads-up b { color: #fff; }
   .field { margin-top: 1.125rem; }
   .field label { display: flex; justify-content: space-between; margin-bottom: 0.4375rem; font-size: 0.875rem; font-weight: 600; }
   .optional { font-weight: 400; color: var(--muted); }
-  .field input {
+  .field input, .field textarea {
     width: 100%; height: 3rem; padding: 0 0.875rem;
     border-radius: 0.75rem; border: 1px solid rgba(255, 255, 255, 0.18);
     background: rgba(255, 255, 255, 0.06);
     font-size: 1rem;
   }
-  .field input::placeholder { color: rgba(255, 255, 255, 0.36); }
-  .field input:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 0.1875rem rgba(143, 163, 224, 0.28); }
+  .field textarea { height: 5.5rem; padding: 0.75rem 0.875rem; line-height: 1.4; resize: vertical; font-family: inherit; }
+  .field input::placeholder, .field textarea::placeholder { color: rgba(255, 255, 255, 0.36); }
+  .field input:focus, .field textarea:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 0.1875rem rgba(143, 163, 224, 0.28); }
   .field input[aria-invalid="true"] { border-color: var(--danger); }
+
+  /* Confirmation: what they typed, shown back before it's booked. */
+  .confirm h2 { margin: 0; padding-right: 2.5rem; font: 700 1.5rem/1.2 var(--font-display); }
+  .review { margin: 1.125rem 0 0; padding: 0; border-top: 1px solid var(--line); }
+  .review div { display: grid; grid-template-columns: 7.5rem minmax(0, 1fr); gap: 0.75rem; padding: 0.625rem 0; border-bottom: 1px solid var(--line); }
+  .review dt { color: var(--muted); font-size: 0.8125rem; padding-top: 0.125rem; }
+  .review dd { margin: 0; font-weight: 600; overflow-wrap: anywhere; white-space: pre-wrap; }
+  /* The performance name in the flyer's font, as big as it'll matter. */
+  .review .dj dd { font: 700 1.25rem/1.25 var(--font-display); }
+  .btn.secondary { margin-top: 0.625rem; background: transparent; color: var(--text); border: 1px solid rgba(255, 255, 255, 0.24); }
+  .btn.secondary:hover { background: rgba(255, 255, 255, 0.08); }
   .handle { position: relative; }
   .handle span { position: absolute; left: 0.875rem; top: 50%; transform: translateY(-50%); color: var(--muted); pointer-events: none; }
   .handle input { padding-left: 2rem; }
@@ -325,6 +344,7 @@
       <p class="eyebrow">Book this slot</p>
       <h2 id="dialog-time" class="dialog-time"></h2>
       <p class="dialog-room"><span class="dot" aria-hidden="true"></span><span id="dialog-room"></span></p>
+      <p class="heads-up">Enter <b>ONLY</b> the info requested in each box, typed <b>EXACTLY</b> as you want it displayed or used. Anything else, such as name pronunciations, questions or comments, can go in the <b>Other</b> section of this form.</p>
 
       <div class="field">
         <label for="f-name">Name</label>
@@ -345,6 +365,10 @@
           <input id="f-instagram" name="instagram" maxlength="80" placeholder="yourhandle" autocapitalize="none" autocorrect="off" spellcheck="false">
         </div>
       </div>
+      <div class="field">
+        <label for="f-other">Other <span class="optional">Optional</span></label>
+        <textarea id="f-other" name="other" maxlength="500" placeholder="Name pronunciation, questions, comments…"></textarea>
+      </div>
       <!-- Hidden from people. Bots fill it in, and the backend ignores anything that does. -->
       <div class="trap" aria-hidden="true">
         <label for="f-website">Leave this empty</label>
@@ -352,9 +376,19 @@
       </div>
 
       <p id="form-error" class="form-error" role="alert"></p>
-      <button id="submit" type="submit" class="btn">Confirm slot</button>
+      <button id="submit" type="submit" class="btn">Continue</button>
       <p class="fine">Your email is only used for this event.</p>
     </form>
+
+    <!-- Shown after Continue, so they check what they typed before it's booked. -->
+    <div id="confirm" class="confirm" hidden>
+      <h2 id="confirm-title" tabindex="-1">Confirmation</h2>
+      <p class="heads-up">Please confirm that all info is entered correctly and your performance name is typed <b>EXACTLY</b> as you want it displayed on the flyer, as it will be copied directly from this form. This is an automated process with limited human input, so spelling errors and typos may end up on the flyer.</p>
+      <dl class="review" id="review"></dl>
+      <p id="confirm-error" class="form-error" role="alert"></p>
+      <button id="confirm-submit" type="button" class="btn">Confirm slot</button>
+      <button id="confirm-back" type="button" class="btn secondary">Go back and edit</button>
+    </div>
 
     <div id="done" class="done" hidden>
       <div class="check" aria-hidden="true">
@@ -395,7 +429,8 @@ const form = $('form');
 // It signs people up for the next show, and only on show night.
 const IN_PERSON = new URLSearchParams(location.search).has('in-person');
 
-const state = { data: null, error: false, selected: null, busy: false };
+// details: what they typed, kept between Continue and Confirm slot.
+const state = { data: null, error: false, selected: null, details: null, busy: false };
 const api = CONFIG.apiUrl ? remoteApi(CONFIG.apiUrl) : demoApi();
 
 // ---- Backend --------------------------------------------------------------
@@ -654,6 +689,7 @@ function openDialog(slot) {
   dialog.querySelector('.dialog-room .dot').style.setProperty('--room', roomColor(slot.room));
   setError('');
   form.hidden = false;
+  $('confirm').hidden = true;
   $('done').hidden = true;
   dialog.showModal();
 }
@@ -669,8 +705,9 @@ function setError(message, field) {
 
 function setBusy(busy) {
   state.busy = busy;
-  $('submit').disabled = busy;
-  $('submit').textContent = busy ? 'Booking…' : 'Confirm slot';
+  $('confirm-submit').disabled = busy;
+  $('confirm-back').disabled = busy;
+  $('confirm-submit').textContent = busy ? 'Booking…' : 'Confirm slot';
 }
 
 // Same rules as the backend: "@handle", "handle" or a profile link.
@@ -689,7 +726,8 @@ form.elements.instagram.addEventListener('blur', (event) => {
   if (handle) event.target.value = handle;
 });
 
-form.addEventListener('submit', async (event) => {
+// Continue: checks the form, then shows it all back for them to confirm.
+form.addEventListener('submit', (event) => {
   event.preventDefault();
   if (state.busy) return;
 
@@ -697,18 +735,51 @@ form.addEventListener('submit', async (event) => {
   const performanceName = form.elements.performanceName.value.trim();
   const email = form.elements.email.value.trim();
   const instagram = cleanInstagram(form.elements.instagram.value);
+  const other = form.elements.other.value.trim();
   if (!name) return setError('Please enter your name.', form.elements.name);
   if (!performanceName) return setError('Please enter your performance name.', form.elements.performanceName);
   if (!EMAIL_RE.test(email)) return setError('Please enter a valid email address.', form.elements.email);
   if (instagram === null) return setError("That Instagram handle doesn't look right.", form.elements.instagram);
   setError('');
 
+  state.details = { name, performanceName, email, instagram, other };
+  const slot = state.selected;
+  const rows = [
+    ['Performance name', performanceName, 'dj'],
+    ['Name', name],
+    ['Email', email],
+    ['Instagram', instagram ? '@' + instagram : '–'],
+    ['Other', other || '–'],
+    ['Slot', `${slot.time} · ${slot.room}`],
+  ];
+  $('review').replaceChildren(...rows.map(([label, value, className]) => {
+    const row = el('div', className);
+    row.append(el('dt', '', label), el('dd', '', value));
+    return row;
+  }));
+  $('confirm-error').textContent = '';
+  form.hidden = true;
+  $('confirm').hidden = false;
+  dialog.scrollTop = 0;
+  $('confirm-title').focus();
+});
+
+// Back to the form, with everything they typed still in it.
+$('confirm-back').addEventListener('click', () => {
+  $('confirm').hidden = true;
+  form.hidden = false;
+  form.elements.performanceName.focus();
+});
+
+$('confirm-submit').addEventListener('click', async () => {
+  if (state.busy) return;
+  const { name, performanceName, email, instagram, other } = state.details;
   const slot = state.selected;
   setBusy(true);
   let result;
   try {
     result = await api.book({
-      slotId: slot.id, name, performanceName, email, instagram, website: form.elements.website.value,
+      slotId: slot.id, name, performanceName, email, instagram, other, website: form.elements.website.value,
       mode: IN_PERSON ? 'in-person' : '',
     });
   } catch (err) {
@@ -726,7 +797,7 @@ form.addEventListener('submit', async (event) => {
     $('done-slot').replaceChildren(...date, `${slot.time} · ${slot.room}`);
     $('done-note').textContent = result.confirmationSent ? `A confirmation is on its way to ${email}.` : '';
     form.reset();
-    form.hidden = true;
+    $('confirm').hidden = true;
     $('done').hidden = false;
     $('done').querySelector('button').focus();
     return;
@@ -739,7 +810,14 @@ form.addEventListener('submit', async (event) => {
     refresh({ quiet: true });
     return;
   }
-  setError(result.message || 'Something went wrong. Try again.');
+  // Something they can fix, like an email that already has a slot: back to the form to fix it.
+  if (result.code === 'invalid' || result.code === 'duplicate') {
+    $('confirm').hidden = true;
+    form.hidden = false;
+    setError(result.message || 'Something went wrong. Try again.', result.code === 'duplicate' ? form.elements.email : null);
+    return;
+  }
+  $('confirm-error').textContent = result.message || 'Something went wrong. Try again.';
 });
 
 dialog.addEventListener('click', (event) => {

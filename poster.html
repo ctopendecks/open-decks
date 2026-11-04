@@ -1,0 +1,841 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>CT Open Decks Posters</title>
+<meta name="robots" content="noindex">
+<meta name="theme-color" content="#1f1629">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='16' r='15' fill='%231f1629'/%3E%3Ccircle cx='16' cy='16' r='10' fill='none' stroke='%238fa3e0' stroke-width='2'/%3E%3Ccircle cx='16' cy='16' r='3' fill='%23e59ad0'/%3E%3C/svg%3E">
+<link rel="preload" href="CT-Open-Decks.ttf" as="font" type="font/ttf" crossorigin>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  /* Everything on the posters is set in this. The file only has a bold weight. */
+  @font-face {
+    font-family: 'CT Open Decks';
+    src: url('CT-Open-Decks.ttf') format('truetype');
+    font-weight: 700;
+  }
+
+  :root {
+    --bg: #1f1629;
+    --card: rgba(255, 255, 255, 0.045);
+    --line: rgba(255, 255, 255, 0.12);
+    --text: #ffffff;
+    --muted: rgba(255, 255, 255, 0.62);
+    --accent: #8fa3e0;
+    --ink: #1a1424;
+    --ok: #9be3b8;
+    --danger: #ff9a9a;
+    --font-display: 'CT Open Decks', 'Arial Black', system-ui, sans-serif;
+    --font-body: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; }
+  [hidden] { display: none !important; }
+  html { -webkit-text-size-adjust: 100%; }
+  body {
+    margin: 0;
+    min-height: 100vh;
+    font: 400 1rem/1.5 var(--font-body);
+    color: var(--text);
+    background:
+      radial-gradient(56.25rem 32.5rem at 10% -12%, rgba(143, 163, 224, 0.24), transparent 62%),
+      radial-gradient(47.5rem 37.5rem at 112% 18%, rgba(229, 154, 208, 0.15), transparent 62%),
+      var(--bg);
+    background-attachment: fixed;
+    -webkit-font-smoothing: antialiased;
+  }
+  button, input { font: inherit; color: inherit; }
+  :focus-visible { outline: 0.125rem solid #fff; outline-offset: 0.1875rem; }
+
+  .wrap { max-width: 72rem; margin: 0 auto; padding: 3rem 1rem 5rem; }
+
+  header { text-align: center; }
+  .eyebrow {
+    margin: 0 0 0.75rem;
+    font: 600 0.75rem/1 var(--font-body);
+    letter-spacing: 0.18em; text-transform: uppercase;
+    color: var(--accent);
+  }
+  h1 { margin: 0; font: 700 clamp(2rem, 6vw, 3rem)/1.08 var(--font-display); }
+  .date { margin: 0.625rem 0 0; font-size: 1.125rem; font-weight: 500; color: rgba(255, 255, 255, 0.86); }
+  .status {
+    display: inline-flex; align-items: center; gap: 0.5rem;
+    margin: 1.25rem 0 0; padding: 0.4375rem 0.875rem; border-radius: 999px;
+    background: rgba(255, 255, 255, 0.06); border: 1px solid var(--line);
+    font-size: 0.875rem; font-weight: 500; color: rgba(255, 255, 255, 0.86);
+  }
+  .status::before { content: ''; width: 0.5rem; height: 0.5rem; border-radius: 50%; background: var(--muted); }
+  .status.full::before { background: var(--ok); }
+  .status.open::before { background: #f2c879; }
+  .status.error { color: #ffd9d9; border-color: rgba(255, 154, 154, 0.35); background: rgba(255, 154, 154, 0.1); }
+  .status.error::before { background: var(--danger); }
+
+  /* Colour picker */
+  .colors {
+    max-width: 44rem; margin: 2rem auto 0; padding: 1.25rem;
+    background: var(--card); border: 1px solid var(--line); border-radius: 1rem;
+  }
+  .colors h2 { margin: 0 0 0.25rem; font-size: 1rem; font-weight: 600; }
+  .colors .hint { margin: 0 0 1rem; color: var(--muted); font-size: 0.875rem; }
+  /* 8 across on a computer, 2 rows of 4 on a phone. */
+  .swatches { display: grid; grid-template-columns: repeat(auto-fit, minmax(4.25rem, 1fr)); gap: 0.375rem; align-items: start; }
+  @media (max-width: 30rem) { .swatches { grid-template-columns: repeat(4, 1fr); } }
+  .swatch {
+    display: flex; flex-direction: column; align-items: center; gap: 0.375rem;
+    padding: 0.5rem 0.25rem 0.4375rem; border-radius: 0.75rem;
+    background: none; border: 1px solid transparent; cursor: pointer;
+    font-size: 0.75rem; font-weight: 500; color: var(--muted);
+  }
+  .swatch:hover { background: rgba(255, 255, 255, 0.05); color: var(--text); }
+  .swatch .dot {
+    width: 2.25rem; height: 2.25rem; border-radius: 50%;
+    background: var(--swatch); box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.28);
+  }
+  .swatch[aria-checked='true'] { border-color: rgba(255, 255, 255, 0.5); background: rgba(255, 255, 255, 0.07); color: var(--text); }
+  .swatch .tag { font-size: 0.625rem; letter-spacing: 0.06em; text-transform: uppercase; white-space: nowrap; color: var(--accent); }
+  .fine {
+    display: grid; grid-template-columns: auto 1fr; align-items: center; gap: 0.5rem 0.75rem;
+    margin-top: 1rem; font-size: 0.875rem; color: var(--muted);
+  }
+  .fine .link { grid-column: 1 / -1; justify-self: end; }
+  .fine input { width: 100%; height: 1.75rem; margin: 0; background: transparent; cursor: pointer; -webkit-appearance: none; appearance: none; }
+  .fine input::-webkit-slider-runnable-track { height: 0.625rem; border-radius: 999px; background: var(--wheel); }
+  .fine input::-moz-range-track { height: 0.625rem; border-radius: 999px; background: var(--wheel); }
+  .fine input::-webkit-slider-thumb {
+    -webkit-appearance: none; width: 1.375rem; height: 1.375rem; margin-top: -0.375rem; border-radius: 50%;
+    background: var(--swatch); border: 3px solid #fff; box-shadow: 0 1px 6px rgba(0, 0, 0, 0.5);
+  }
+  .fine input::-moz-range-thumb {
+    width: 1rem; height: 1rem; border-radius: 50%; background: var(--swatch); border: 3px solid #fff;
+  }
+  .link {
+    padding: 0; background: none; border: 0; cursor: pointer;
+    color: var(--accent); font-size: 0.875rem; font-weight: 500; text-decoration: underline; text-underline-offset: 0.2em;
+  }
+  /* Keeps its space, so the posters don't jump when it appears. */
+  .link:disabled { visibility: hidden; }
+
+  /* Posters */
+  .posters {
+    display: grid; grid-template-columns: 0.75fr 1fr 0.86fr; align-items: end; gap: 1.5rem;
+    margin: 2.25rem 0 0; padding: 0; list-style: none;
+  }
+  .poster { display: flex; flex-direction: column; gap: 0.75rem; margin: 0; }
+  .poster canvas {
+    display: block; width: 100%; height: auto; border-radius: 0.5rem;
+    background: rgba(255, 255, 255, 0.04); box-shadow: 0 0.75rem 2.5rem rgba(0, 0, 0, 0.45);
+  }
+  .poster .meta { display: flex; align-items: center; justify-content: space-between; gap: 0.75rem; }
+  .poster .name { font-weight: 600; }
+  .poster .size { display: block; color: var(--muted); font-size: 0.8125rem; }
+  .poster .note { margin: 0; color: #ffd9d9; font-size: 0.8125rem; }
+  .btn {
+    display: inline-flex; align-items: center; justify-content: center; gap: 0.5rem;
+    padding: 0.625rem 1rem; border-radius: 0.625rem; border: 0; cursor: pointer;
+    background: #fff; color: var(--ink); font-weight: 600; font-size: 0.9375rem; white-space: nowrap;
+  }
+  .btn:hover { background: #e9e4f2; }
+  .btn:disabled { opacity: 0.55; cursor: progress; }
+  .btn.ghost { background: rgba(255, 255, 255, 0.08); color: var(--text); border: 1px solid var(--line); }
+  .btn.ghost:hover { background: rgba(255, 255, 255, 0.14); }
+  .all { display: flex; justify-content: center; margin-top: 2.25rem; }
+  .all .btn { padding: 0.875rem 1.5rem; font-size: 1rem; }
+
+  @media (max-width: 52rem) {
+    .posters { grid-template-columns: 1fr; gap: 2.25rem; max-width: 26rem; margin-inline: auto; }
+  }
+  @media (prefers-reduced-motion: no-preference) {
+    .poster canvas { transition: opacity 0.15s; }
+  }
+  .busy canvas { opacity: 0.6; }
+</style>
+</head>
+<body>
+<main class="wrap">
+  <header>
+    <p class="eyebrow">Posters</p>
+    <h1 id="title">CT Open Decks</h1>
+    <p class="date" id="date"></p>
+    <p class="status" id="status" role="status">Loading the lineup…</p>
+  </header>
+
+  <section class="colors" aria-labelledby="colors-title">
+    <h2 id="colors-title">Background color</h2>
+    <p class="hint" id="colors-hint">Each month gets the next color in the list, so it's always one you haven't used in a while.</p>
+    <div class="swatches" id="swatches" role="radiogroup" aria-labelledby="colors-title"></div>
+    <div class="fine">
+      <label for="hue">Fine-tune</label>
+      <input type="range" id="hue" min="0" max="359" step="1" value="0">
+      <button type="button" class="link" id="auto" disabled>Use this month's</button>
+    </div>
+  </section>
+
+  <ul class="posters" id="posters"></ul>
+  <div class="all"><button type="button" class="btn" id="download-all" disabled>Download all 3</button></div>
+</main>
+
+<script>
+const CONFIG = {
+  // The same web app URL as in index.html (it ends in /exec).
+  apiUrl: 'https://script.google.com/macros/s/AKfycbwZntnJesyS-5fPQT9PHJyThZiSTxXhL__geIVGaDWVkGVpOe7ROJcwM9jBscPxTZfdYQ/exec',
+};
+
+// The words that stay the same every month. Everything else comes from the sign-up sheet.
+const WORDING = {
+  taglines: ['-SIGN UP FOR THE NEXT EVENT!', '-SUPPORT THE CT HOUSE SCENE!', '-MEET AND NETWORK WITH OTHER DJs!'],
+  address: ['STELLA BLUES - 204 CROWN ST.', 'NEW HAVEN, CT - 21+'],
+  // Print only: above the QR code, and at the bottom, followed by "ON OR AFTER" the day after the show.
+  follow: ['FOLLOW US!', '@CTOPENDECKS'],
+  remove: 'FEEL FREE TO REMOVE THIS POSTER',
+  // An open slot, before the lineup is full.
+  open: 'TBA',
+};
+
+// Background colours, as how far to turn the hue from the blue the background files are in
+// (like the Hue slider in Photoshop's Hue/Saturation, which keeps lightness and saturation).
+// Each session takes the next one in the list and it wraps around, so a colour comes back once
+// every 8 months. They're ordered so neighbours look nothing alike. Turns between about 140 and
+// 230 are left out: they make browns and olives that the yellow text doesn't stand out on.
+const COLORS = [
+  { name: 'Blue', shift: 0 },
+  { name: 'Red', shift: 122 },
+  { name: 'Teal', shift: 295 },
+  { name: 'Magenta', shift: 72 },
+  { name: 'Green', shift: 250 },
+  { name: 'Violet', shift: 30 },
+  { name: 'Ocean', shift: 325 },
+  { name: 'Pink', shift: 100 },
+];
+// Session 20 was blue, so it counts from there: 21 red, 22 teal, 23 magenta, and so on.
+const COLOR_FOR_SESSION = (session) => COLORS[(((session - 20) % COLORS.length) + COLORS.length) % COLORS.length];
+// The turns above start from this poster's blue. The other backgrounds are first matched to its
+// colour (see matchTones), so all three posters come out the same whatever the month.
+const MATCH_TO = 'post';
+
+// Where everything goes, in each poster's own pixels, measured from the PSDs. y is where the
+// first line of text sits (its baseline), size is the font size, and lines are 1.2 sizes apart.
+// Text is centred on the poster, and the two rooms' columns sit `columns` either side of the middle.
+const POSTERS = {
+  story: {
+    label: 'Story', file: '(STORY)', width: 1080, height: 1920, background: 'poster-story.jpg',
+    logo: { src: 'logo.png', x: 177, y: 127, w: 727, h: 508 },
+    session: { y: 773.95, size: 120.46 },
+    rooms: { y: 877.2, size: 57.85, columns: 240 },
+    names: { y: 951.8, size: 52.92 },
+    taglines: { y: 1370.87, size: 48.53 },
+    date: { y: 1582.62, size: 59.82 },
+    address: { y: 1646.42, size: 53.58 },
+    margin: 30, gap: 28,
+  },
+  post: {
+    label: 'Post', file: '(IG Post)', width: 1080, height: 1350, background: 'poster-post.jpg',
+    logo: { src: 'logo.png', x: 292, y: 33, w: 500, h: 349 },
+    session: { y: 491.74, size: 102.44 },
+    rooms: { y: 579.84, size: 49.86, columns: 250 },
+    names: { y: 643.2, size: 47 },
+    taglines: { y: 999.33, size: 38.6 },
+    date: { y: 1172.79, size: 49.03 },
+    address: { y: 1224.28, size: 42.61 },
+    margin: 30, gap: 28,
+  },
+  print: {
+    label: 'Print', file: '(PRINT)', width: 3300, height: 5100, dpi: 300, background: 'poster-print.jpg',
+    logo: { src: 'poster-logo-print.png', x: 805, y: 256, w: 1686, h: 1178 },
+    session: { y: 1837.56, size: 338.52 },
+    rooms: { y: 2127.8, size: 162.56, columns: 670 },
+    names: { y: 2345.9, size: 148.72 },
+    taglines: { y: 3531.9, size: 136.39 },
+    date: { y: 4096.67, size: 168.12 },
+    address: { y: 4289.38, size: 150.56 },
+    remove: { y: 4722.64, size: 62.63 },
+    follow: { x: 3008.5, y: 4504.12, size: 70.83, handle: 51.41 },
+    qr: { src: 'poster-qr.png', background: 'poster-qr-background.jpg', x: 2777, y: 4596, w: 461, h: 454, border: 3 },
+    margin: 100, gap: 90,
+  },
+};
+const ORDER = ['story', 'post', 'print'];
+
+const YELLOW = '#ffde00';
+const WHITE = '#ffffff';
+const LEADING = 1.2;
+// Photoshop's drop shadow on the yellow text: black, no offset, 4px soft.
+const SHADOW = 4;
+// "14TH": the letters are this much smaller and raised by this much of the font size.
+const ORDINAL = { scale: 0.604, rise: 0.243 };
+const PREVIEW_WIDTH = 720;
+// The swatches: a typical blue from the post background (hue 233.8), turned like the posters.
+const BASE_COLOR = [31, 40, 122];
+const WEEKDAYS = ['SUNDAY', 'MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY'];
+const MONTHS = ['JAN.', 'FEB.', 'MARCH', 'APRIL', 'MAY', 'JUNE', 'JULY', 'AUG.', 'SEPT.', 'OCT.', 'NOV.', 'DEC.'];
+
+const $ = (id) => document.getElementById(id);
+const state = { show: null, shift: 0, autoShift: 0, art: null, previews: {}, queued: false };
+
+// ---- Loading ----------------------------------------------------------------
+
+async function loadShow() {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 20000);
+  try {
+    const res = await fetch(CONFIG.apiUrl + '?mode=poster', { cache: 'no-store', signal: controller.signal });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const data = await res.json();
+    if (!data.ok) throw new Error(data.message || 'The sheet had a problem');
+    return data;
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+function loadImage(src) {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.onload = () => resolve(img);
+    img.onerror = () => reject(new Error(`Couldn't load ${src}`));
+    img.src = src;
+  });
+}
+
+async function loadArt() {
+  const files = new Set();
+  for (const p of Object.values(POSTERS)) {
+    files.add(p.background);
+    files.add(p.logo.src);
+    if (p.qr) files.add(p.qr.src).add(p.qr.background);
+  }
+  const art = {};
+  await Promise.all([...files].map(async (src) => { art[src] = await loadImage(src); }));
+  await document.fonts.load('700 100px "CT Open Decks"');
+  art.match = matchTones(art);
+  return art;
+}
+
+// ---- What goes on the posters ---------------------------------------------------
+
+function ordinal(n) {
+  const teen = n % 100 >= 11 && n % 100 <= 13;
+  return teen ? 'TH' : ['TH', 'ST', 'ND', 'RD'][n % 10] || 'TH';
+}
+
+// "8:00 PM – 8:45 PM" → "8PM", and "8:30 PM – …" → "8:30PM".
+function startTime(time) {
+  const m = /^(\d{1,2})(?::(\d{2}))?\s*([AP]M)/i.exec(time || '');
+  return m ? `${m[1]}${m[2] && m[2] !== '00' ? ':' + m[2] : ''}${m[3].toUpperCase()}` : '';
+}
+
+// [day as a Date at midnight UTC, or null] from 'yyyy-MM-dd', plus `addDays`.
+function dayOf(key, addDays = 0) {
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(key || '');
+  return m ? new Date(Date.UTC(+m[1], m[2] - 1, +m[3] + addDays)) : null;
+}
+
+// "8PM - WEDNESDAY, OCT. 14TH" as parts, with the TH raised.
+function dateLine(show) {
+  const day = dayOf(show.event.day);
+  const time = startTime(show.slots[0] && show.slots[0].time);
+  if (!day) return [{ text: [time, String(show.event.date || '').toUpperCase()].filter(Boolean).join(' - ') }];
+  const d = day.getUTCDate();
+  const text = `${time ? time + ' - ' : ''}${WEEKDAYS[day.getUTCDay()]}, ${MONTHS[day.getUTCMonth()]} ${d}`;
+  return [{ text }, { text: ordinal(d), ...ORDINAL }];
+}
+
+// "ON OR AFTER DEC. 10TH 2026": the day after the show.
+function removeLine(show) {
+  const day = dayOf(show.event.day, 1);
+  if (!day) return null;
+  const d = day.getUTCDate();
+  return [
+    { text: `ON OR AFTER ${MONTHS[day.getUTCMonth()]} ${d}` },
+    { text: ordinal(d), scale: 0.674, rise: 0.253 },
+    { text: ` ${day.getUTCFullYear()}` },
+  ];
+}
+
+// The rooms in the order they first appear in the Lineup tab, each with its DJs in time order.
+function columnsOf(show) {
+  return show.rooms.map((room) => ({
+    room,
+    djs: show.slots.filter((s) => s.room === room).map((s) => s.dj),
+  }));
+}
+
+// ---- Colour -----------------------------------------------------------------
+
+// Turns the hue of every pixel by `degrees`, keeping its lightness and saturation, like
+// Photoshop's Hue/Saturation. Only the hue changes, so the brightest and darkest of each
+// pixel's red, green and blue stay the same.
+function shiftHue(data, degrees) {
+  const turn = ((((degrees % 360) + 360) % 360) / 60);
+  if (!turn) return data;
+  for (let i = 0; i < data.length; i += 4) {
+    const r = data[i], g = data[i + 1], b = data[i + 2];
+    const max = r > g ? (r > b ? r : b) : (g > b ? g : b);
+    const min = r < g ? (r < b ? r : b) : (g < b ? g : b);
+    const c = max - min;
+    if (!c) continue;
+    let h = max === r ? (g - b) / c : max === g ? (b - r) / c + 2 : (r - g) / c + 4;
+    h = (h + turn + 6) % 6;
+    const x = c * (1 - Math.abs((h % 2) - 1));
+    const sector = h | 0;
+    const [rr, gg, bb] =
+      sector === 0 ? [c, x, 0] : sector === 1 ? [x, c, 0] : sector === 2 ? [0, c, x] :
+      sector === 3 ? [0, x, c] : sector === 4 ? [x, 0, c] : [c, 0, x];
+    data[i] = rr + min;
+    data[i + 1] = gg + min;
+    data[i + 2] = bb + min;
+  }
+  return data;
+}
+
+// Moves every pixel's hue (in degrees), saturation and lightness (0 to 1) by the amounts in m.
+function adjustHsl(data, m) {
+  const turn = m.hue / 60;
+  for (let i = 0; i < data.length; i += 4) {
+    const r = data[i] / 255, g = data[i + 1] / 255, b = data[i + 2] / 255;
+    const max = Math.max(r, g, b), min = Math.min(r, g, b), chroma = max - min;
+    let l = (max + min) / 2;
+    let s = chroma ? chroma / (1 - Math.abs(2 * l - 1)) : 0;
+    let h = !chroma ? 0 : max === r ? (g - b) / chroma : max === g ? (b - r) / chroma + 2 : (r - g) / chroma + 4;
+    h = (((h + turn) % 6) + 6) % 6;
+    l = Math.min(1, Math.max(0, l + m.lightness));
+    s = chroma ? Math.min(1, Math.max(0, s + m.saturation)) : 0;
+    const c = (1 - Math.abs(2 * l - 1)) * s;
+    const x = c * (1 - Math.abs((h % 2) - 1));
+    const lo = l - c / 2;
+    const sector = h | 0;
+    data[i] = ((sector === 0 || sector === 5 ? c : sector === 1 || sector === 4 ? x : 0) + lo) * 255;
+    data[i + 1] = ((sector === 1 || sector === 2 ? c : sector === 0 || sector === 3 ? x : 0) + lo) * 255;
+    data[i + 2] = ((sector === 3 || sector === 4 ? c : sector === 2 || sector === 5 ? x : 0) + lo) * 255;
+  }
+  return data;
+}
+
+// The average hue, saturation and lightness of the middle of a background (the maze), where
+// it's one even colour. With `m`, it's measured after adjustHsl(m).
+function toneOf(img, m) {
+  const w = 400;
+  const h = Math.round((w * img.height) / img.width);
+  const c = document.createElement('canvas');
+  c.width = w;
+  c.height = h;
+  const ctx = c.getContext('2d');
+  ctx.drawImage(img, 0, 0, w, h);
+  const d = ctx.getImageData(Math.round(w * 0.2), Math.round(h * 0.25), Math.round(w * 0.6), Math.round(h * 0.5)).data;
+  if (m) adjustHsl(d, m);
+  let x = 0, y = 0, sat = 0, light = 0;
+  for (let i = 0; i < d.length; i += 4) {
+    const r = d[i] / 255, g = d[i + 1] / 255, b = d[i + 2] / 255;
+    const max = Math.max(r, g, b), min = Math.min(r, g, b), chroma = max - min;
+    const l = (max + min) / 2;
+    const s = chroma ? chroma / (1 - Math.abs(2 * l - 1)) : 0;
+    const hue = !chroma ? 0 : max === r ? (g - b) / chroma : max === g ? (b - r) / chroma + 2 : (r - g) / chroma + 4;
+    x += Math.cos((hue * Math.PI) / 3) * s;
+    y += Math.sin((hue * Math.PI) / 3) * s;
+    sat += s;
+    light += l;
+  }
+  const n = d.length / 4;
+  return { hue: (Math.atan2(y, x) * 180) / Math.PI, saturation: sat / n, lightness: light / n };
+}
+
+// The print background is a little brighter, more saturated and more violet than the social
+// ones. Each background is moved to the same average colour as the post's, before the month's
+// colour goes on, so the three posters match. It's worked out from the pictures themselves, so a
+// new background gets matched too. The QR code's square gets the same change as its poster.
+function matchTones(art) {
+  const ref = toneOf(art[POSTERS[MATCH_TO].background]);
+  const match = {};
+  for (const [kind, p] of Object.entries(POSTERS)) {
+    // Measured again after each try and corrected by what's left over, since the darkest and
+    // greyest pixels can't move as far as the rest.
+    const m = { hue: 0, saturation: 0, lightness: 0 };
+    for (let pass = 0; pass < 4; pass++) {
+      const now = toneOf(art[p.background], pass ? m : null);
+      m.hue += ((((ref.hue - now.hue) % 360) + 540) % 360) - 180;
+      m.saturation += ref.saturation - now.saturation;
+      m.lightness += ref.lightness - now.lightness;
+    }
+    // Already the same colour (the story and post are cut from the same picture): left untouched.
+    const same = Math.abs(m.hue) < 1 && Math.abs(m.saturation) < 0.005 && Math.abs(m.lightness) < 0.005;
+    match[kind] = same ? null : m;
+  }
+  return match;
+}
+
+function swatchColor(shift) {
+  const [r, g, b] = shiftHue(Uint8ClampedArray.from([...BASE_COLOR, 255]), shift);
+  return `rgb(${r}, ${g}, ${b})`;
+}
+
+// A background's pixels at w × h: matched to the post's colour (`match`), then turned by `shift`.
+// The previews redraw often, so their matched pixels are kept.
+const pixelCache = new Map();
+function shiftedPixels(img, w, h, shift, keep, match) {
+  const key = `${img.src}@${w}x${h}`;
+  let base = keep && pixelCache.get(key);
+  if (!base) {
+    const c = document.createElement('canvas');
+    c.width = w;
+    c.height = h;
+    const ctx = c.getContext('2d');
+    ctx.imageSmoothingQuality = 'high';
+    ctx.drawImage(img, 0, 0, w, h);
+    base = ctx.getImageData(0, 0, w, h);
+    if (match) adjustHsl(base.data, match);
+    if (keep) pixelCache.set(key, base);
+  }
+  const out = keep ? new ImageData(new Uint8ClampedArray(base.data), w, h) : base;
+  shiftHue(out.data, shift);
+  return out;
+}
+
+// ---- Drawing ----------------------------------------------------------------
+
+const font = (size) => `700 ${size}px "CT Open Decks"`;
+
+function runsWidth(ctx, runs, size) {
+  let w = 0;
+  for (const r of runs) {
+    ctx.font = font(size * (r.scale || 1));
+    w += ctx.measureText(r.text).width;
+  }
+  return w;
+}
+
+// Draws text made of parts (like a date with a raised TH) centred on cx, sitting on y.
+// look: { color, shadow, outline }.
+function drawRuns(pen, runs, cx, y, size, look) {
+  const { ctx, scale } = pen;
+  let x = cx - runsWidth(ctx, runs, size) / 2;
+  ctx.textBaseline = 'alphabetic';
+  ctx.textAlign = 'left';
+  for (const r of runs) {
+    ctx.font = font(size * (r.scale || 1));
+    const ry = y - size * (r.rise || 0);
+    if (look.outline) {
+      ctx.lineWidth = look.outline * 2;
+      ctx.lineJoin = 'round';
+      ctx.strokeStyle = '#000';
+      ctx.strokeText(r.text, x, ry);
+    }
+    if (look.shadow) {
+      ctx.shadowColor = '#000';
+      // Shadows ignore the canvas scale, so they're scaled by hand to match the poster.
+      ctx.shadowBlur = SHADOW * scale;
+    }
+    ctx.fillStyle = look.color;
+    ctx.fillText(r.text, x, ry);
+    ctx.shadowColor = 'transparent';
+    ctx.shadowBlur = 0;
+    x += ctx.measureText(r.text).width;
+  }
+}
+
+// Lines of text, one under the other. The whole block shrinks together if a line is too wide.
+function drawBlock(pen, p, lines, spec, look) {
+  const runs = lines.map((l) => (typeof l === 'string' ? [{ text: l }] : l));
+  const widest = Math.max(...runs.map((r) => runsWidth(pen.ctx, r, spec.size)));
+  const size = spec.size * Math.min(1, (p.width - 2 * p.margin) / widest);
+  runs.forEach((r, i) => drawRuns(pen, r, spec.x ?? p.width / 2, spec.y + i * spec.size * LEADING, size, look));
+}
+
+// One row across the room columns (a heading or a DJ in each room). A name too wide for its
+// column, or one that would run into the next column, is shrunk until it fits. The others stay
+// at full size.
+function drawRow(pen, p, texts, centers, y, size, look) {
+  const { ctx } = pen;
+  ctx.font = font(size);
+  const natural = texts.map((t) => (t ? ctx.measureText(t.text).width : 0));
+  const widths = natural.map((w, i) => Math.min(w, 2 * Math.min(centers[i] - p.margin, p.width - p.margin - centers[i])));
+  for (let pass = 0; pass < 3; pass++) {
+    for (let i = 0; i + 1 < widths.length; i++) {
+      const room = 2 * (centers[i + 1] - centers[i] - p.gap);
+      if (widths[i] + widths[i + 1] <= room) continue;
+      const [big, small] = widths[i] >= widths[i + 1] ? [i, i + 1] : [i + 1, i];
+      widths[big] = Math.max(room - widths[small], room / 2);
+      if (widths[i] + widths[i + 1] > room) widths[i] = widths[i + 1] = room / 2;
+    }
+  }
+  texts.forEach((t, i) => {
+    if (!t) return;
+    const s = natural[i] ? size * Math.min(1, widths[i] / natural[i]) : size;
+    drawRuns(pen, [{ text: t.text }], centers[i], y, s, t.look || look);
+  });
+}
+
+function drawPoster(ctx, kind, show, art, shift, scale, keepPixels) {
+  const p = POSTERS[kind];
+  const w = ctx.canvas.width;
+  const h = ctx.canvas.height;
+  const pen = { ctx, scale };
+  const match = art.match && art.match[kind];
+
+  // The background, in this month's colour.
+  ctx.putImageData(shiftedPixels(art[p.background], w, h, shift, keepPixels, match), 0, 0);
+  ctx.setTransform(scale, 0, 0, scale, 0, 0);
+  ctx.imageSmoothingQuality = 'high';
+  ctx.drawImage(art[p.logo.src], p.logo.x, p.logo.y, p.logo.w, p.logo.h);
+
+  const yellow = { color: YELLOW, shadow: true };
+  const white = { color: WHITE };
+  if (show.event.session) drawBlock(pen, p, [`SESSION ${show.event.session}`], p.session, yellow);
+
+  // The rooms side by side, each column centred on its heading.
+  const columns = columnsOf(show);
+  const n = columns.length;
+  const spacing = n > 1 ? (2 * p.rooms.columns * 2) / n : 0;
+  const centers = columns.map((_, i) => p.width / 2 + (i - (n - 1) / 2) * spacing);
+  drawRow(pen, p, columns.map((c) => ({ text: c.room.toUpperCase() })), centers, p.rooms.y, p.rooms.size, yellow);
+  // More than 6 slots a room squeezes the names closer together.
+  const rows = Math.max(0, ...columns.map((c) => c.djs.length));
+  const squeeze = Math.min(1, 6 / Math.max(rows, 1));
+  const size = p.names.size * squeeze;
+  const dim = { color: 'rgba(255, 255, 255, 0.5)' };
+  for (let r = 0; r < rows; r++) {
+    const texts = columns.map((c) => {
+      if (r >= c.djs.length) return null;
+      return c.djs[r] ? { text: c.djs[r] } : { text: WORDING.open, look: dim };
+    });
+    drawRow(pen, p, texts, centers, p.names.y + r * size * LEADING, size, white);
+  }
+
+  drawBlock(pen, p, WORDING.taglines, p.taglines, yellow);
+  drawBlock(pen, p, [dateLine(show)], p.date, white);
+  drawBlock(pen, p, WORDING.address, p.address, white);
+
+  if (p.remove) {
+    const after = removeLine(show);
+    drawBlock(pen, p, after ? [WORDING.remove, after] : [WORDING.remove], p.remove, { color: YELLOW });
+  }
+  if (p.follow) {
+    const f = p.follow;
+    const look = { color: YELLOW, outline: 1 };
+    drawRuns(pen, [{ text: WORDING.follow[0] }], f.x, f.y, f.size, look);
+    // The @ sits a touch higher than the letters after it.
+    drawRuns(pen, [{ text: '@', rise: 0.0666 }, { text: WORDING.follow[1].replace(/^@/, '') }],
+      f.x, f.y + f.handle * LEADING, f.handle, look);
+  }
+  if (p.qr) {
+    const q = p.qr;
+    // A thin white frame, the QR code's square in this month's colour, then the code itself.
+    ctx.fillStyle = WHITE;
+    ctx.beginPath();
+    ctx.roundRect(q.x - q.border, q.y - q.border, q.w + 2 * q.border, q.h + 2 * q.border, q.border);
+    ctx.fill();
+    const square = document.createElement('canvas');
+    square.width = q.w;
+    square.height = q.h;
+    square.getContext('2d').putImageData(shiftedPixels(art[q.background], q.w, q.h, shift, true, match), 0, 0);
+    ctx.drawImage(square, q.x, q.y, q.w, q.h);
+    ctx.drawImage(art[q.src], q.x, q.y, q.w, q.h);
+  }
+  ctx.setTransform(1, 0, 0, 1, 0, 0);
+}
+
+// ---- Previews and downloads ----------------------------------------------------
+
+function buildPage() {
+  const list = $('posters');
+  for (const kind of ORDER) {
+    const p = POSTERS[kind];
+    const scale = Math.min(1, PREVIEW_WIDTH / p.width);
+    const li = document.createElement('li');
+    li.className = 'poster';
+    li.innerHTML = `
+      <canvas width="${Math.round(p.width * scale)}" height="${Math.round(p.height * scale)}" role="img"></canvas>
+      <div class="meta">
+        <div><span class="name">${p.label}</span><span class="size">${sizeLabel(p)}</span></div>
+        <button type="button" class="btn ghost" disabled>Download</button>
+      </div>
+      <p class="note" hidden></p>`;
+    const canvas = li.querySelector('canvas');
+    canvas.setAttribute('aria-label', `${p.label} poster preview`);
+    li.querySelector('button').addEventListener('click', () => download(kind));
+    state.previews[kind] = { canvas, scale, li, button: li.querySelector('button'), note: li.querySelector('.note') };
+    list.append(li);
+  }
+
+  COLORS.forEach((c) => {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'swatch';
+    b.setAttribute('role', 'radio');
+    b.dataset.shift = c.shift;
+    b.style.setProperty('--swatch', swatchColor(c.shift));
+    b.innerHTML = `<span class="dot"></span><span>${c.name}</span><span class="tag" hidden>This month</span>`;
+    b.addEventListener('click', () => pickColor(c.shift));
+    $('swatches').append(b);
+  });
+  const stops = Array.from({ length: 13 }, (_, i) => swatchColor(i * 30));
+  $('hue').style.setProperty('--wheel', `linear-gradient(90deg, ${stops.join(', ')})`);
+  $('hue').addEventListener('input', (e) => pickColor(Number(e.target.value)));
+  $('auto').addEventListener('click', () => pickColor(state.autoShift));
+  $('download-all').addEventListener('click', downloadAll);
+}
+
+function sizeLabel(p) {
+  return p.dpi ? `11 × 17 in at ${p.dpi} dpi` : `${p.width} × ${p.height}`;
+}
+
+function pickColor(shift) {
+  state.shift = ((shift % 360) + 360) % 360;
+  try {
+    localStorage.setItem(colorKey(), String(state.shift));
+  } catch {}
+  showColor();
+  redraw();
+}
+
+function colorKey() {
+  return `poster-color-${state.show ? state.show.event.session : ''}`;
+}
+
+function showColor() {
+  $('hue').value = state.shift;
+  $('hue').style.setProperty('--swatch', swatchColor(state.shift));
+  $('auto').disabled = state.shift === state.autoShift;
+  for (const b of $('swatches').children) {
+    const shift = Number(b.dataset.shift);
+    b.setAttribute('aria-checked', String(shift === state.shift));
+    b.querySelector('.tag').hidden = shift !== state.autoShift;
+  }
+}
+
+// Redraws the previews once per frame at most, so dragging the slider stays smooth.
+function redraw() {
+  if (state.queued || !state.art) return;
+  state.queued = true;
+  requestAnimationFrame(() => {
+    state.queued = false;
+    for (const kind of ORDER) {
+      const { canvas, scale } = state.previews[kind];
+      drawPoster(canvas.getContext('2d'), kind, state.show, state.art, state.shift, scale, true);
+    }
+  });
+}
+
+// The poster at full size as a JPEG. Phones can't always make a canvas as big as the print one,
+// so that gives a null blob there.
+async function render(kind) {
+  const p = POSTERS[kind];
+  const canvas = document.createElement('canvas');
+  canvas.width = p.width;
+  canvas.height = p.height;
+  const ctx = canvas.getContext('2d');
+  if (!ctx) return null;
+  drawPoster(ctx, kind, state.show, state.art, state.shift, 1, false);
+  const blob = await new Promise((resolve) => canvas.toBlob(resolve, 'image/jpeg', 0.95));
+  canvas.width = canvas.height = 0;
+  return blob && p.dpi ? withDpi(blob, p.dpi) : blob;
+}
+
+// Marks a JPEG as `dpi` dots per inch, so it opens as 11 × 17 inches rather than as a huge
+// 72 dpi picture. Browsers save JPEGs without a print size.
+async function withDpi(blob, dpi) {
+  const bytes = new Uint8Array(await blob.arrayBuffer());
+  const jfif = bytes[2] === 0xff && bytes[3] === 0xe0 && String.fromCharCode(...bytes.slice(6, 10)) === 'JFIF';
+  if (jfif) {
+    bytes.set([1, dpi >> 8, dpi & 255, dpi >> 8, dpi & 255], 13);
+    return new Blob([bytes], { type: 'image/jpeg' });
+  }
+  const app0 = Uint8Array.from([0xff, 0xe0, 0, 16, 0x4a, 0x46, 0x49, 0x46, 0, 1, 1, 1, dpi >> 8, dpi & 255, dpi >> 8, dpi & 255, 0, 0]);
+  return new Blob([bytes.slice(0, 2), app0, bytes.slice(2)], { type: 'image/jpeg' });
+}
+
+function fileName(kind) {
+  const session = state.show.event.session;
+  return `${POSTERS[kind].file} ${session ? 'SESSION ' + session : 'POSTER'}.jpg`;
+}
+
+async function download(kind) {
+  const { button, note } = state.previews[kind];
+  button.disabled = true;
+  button.textContent = 'Making…';
+  note.hidden = true;
+  // Lets the button change before the full-size drawing holds things up.
+  await new Promise((resolve) => setTimeout(resolve, 30));
+  try {
+    const blob = await render(kind);
+    if (!blob) {
+      note.textContent = 'This device can’t make a picture this big. Download this one on a computer.';
+      note.hidden = false;
+      return false;
+    }
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = fileName(kind);
+    document.body.append(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 60000);
+    return true;
+  } finally {
+    button.disabled = false;
+    button.textContent = 'Download';
+  }
+}
+
+async function downloadAll() {
+  const all = $('download-all');
+  all.disabled = true;
+  try {
+    for (const kind of ORDER) {
+      await download(kind);
+      await new Promise((resolve) => setTimeout(resolve, 400));
+    }
+  } finally {
+    all.disabled = false;
+  }
+}
+
+function setStatus(text, kind) {
+  $('status').textContent = text;
+  $('status').className = `status ${kind || ''}`;
+}
+
+// ---- Start ------------------------------------------------------------------
+
+async function start() {
+  buildPage();
+  try {
+    const [show, art] = await Promise.all([loadShow(), loadArt()]);
+    state.show = show;
+    state.art = art;
+  } catch (err) {
+    console.error(err);
+    setStatus('Couldn’t load the lineup. Check your connection and refresh the page.', 'error');
+    return;
+  }
+
+  const { event, slots } = state.show;
+  $('title').textContent = event.session ? `Session ${event.session}` : event.name;
+  $('date').textContent = event.date || '';
+  document.title = `${event.session ? 'Session ' + event.session + ' ' : ''}Posters`;
+  const open = slots.filter((s) => !s.dj).length;
+  if (state.show.full) setStatus('Lineup full. Ready to download.', 'full');
+  else setStatus(`${open} slot${open === 1 ? ' is' : 's are'} still open. ${open === 1 ? 'It shows' : 'They show'} as ${WORDING.open}.`, 'open');
+
+  const auto = event.session ? COLOR_FOR_SESSION(event.session) : COLORS[0];
+  state.autoShift = auto.shift;
+  $('colors-hint').textContent = `This month's color is ${auto.name}. Each session gets the next color in the list, ` +
+    `so it's always one you haven't used in a while. Pick another if you like.`;
+  let saved = null;
+  try {
+    saved = localStorage.getItem(colorKey());
+  } catch {}
+  state.shift = saved !== null && saved !== '' && !isNaN(saved) ? Number(saved) : state.autoShift;
+  showColor();
+  redraw();
+  for (const kind of ORDER) state.previews[kind].button.disabled = false;
+  $('download-all').disabled = false;
+}
+
+start();
+</script>
+</body>
+</html>
