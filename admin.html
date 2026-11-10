@@ -1,0 +1,697 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>CT Open Decks Admin</title>
+<meta name="robots" content="noindex">
+<meta name="theme-color" content="#2e045c">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='16' r='15' fill='%232e045c'/%3E%3Ccircle cx='16' cy='16' r='10' fill='none' stroke='%238fa3e0' stroke-width='2'/%3E%3Ccircle cx='16' cy='16' r='3' fill='%23e59ad0'/%3E%3C/svg%3E">
+<link rel="preload" href="CT-Open-Decks.ttf" as="font" type="font/ttf" crossorigin>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  @font-face {
+    font-family: 'CT Open Decks';
+    src: url('CT-Open-Decks.ttf') format('truetype');
+    font-weight: 700;
+    font-display: swap;
+  }
+
+  :root {
+    /* The darkest purple in background.jpg, shown while it loads. */
+    --bg: #2e045c;
+    /* Boxes and typing fields are solid, so the background never shows through the text. */
+    --card: #251344;
+    --field: #33214f;
+    --line: rgba(255, 255, 255, 0.12);
+    --text: #ffffff;
+    --muted: rgba(255, 255, 255, 0.62);
+    --accent: #8fa3e0;
+    --ink: #1a1424;
+    --ok: #9be3b8;
+    --danger: #ff9a9a;
+    --font-display: 'CT Open Decks', 'Arial Black', system-ui, sans-serif;
+    --font-body: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; }
+  [hidden] { display: none !important; }
+  html { -webkit-text-size-adjust: 100%; }
+  body {
+    margin: 0;
+    min-height: 100vh;
+    font: 400 1rem/1.5 var(--font-body);
+    color: var(--text);
+    background: var(--bg);
+    -webkit-font-smoothing: antialiased;
+  }
+  body:has(dialog[open]) { overflow: hidden; }
+  /* The sign-up page's background picture, fixed behind the page. */
+  body::before {
+    content: ''; position: fixed; z-index: -1; top: 0; left: 0; width: 100%; height: 100vh; height: 100lvh;
+    background: var(--bg) url('background.jpg') center / cover no-repeat;
+  }
+  button, input { font: inherit; color: inherit; }
+  :focus-visible { outline: 0.125rem solid #fff; outline-offset: 0.1875rem; }
+  .visually-hidden {
+    position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0;
+    overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0;
+  }
+
+  .wrap { max-width: 40rem; margin: 0 auto; padding: 2.5rem 1rem 5rem; }
+  /* The posters need the room. */
+  .wrap.wide { max-width: 72rem; }
+  header { text-align: center; }
+  .logo { display: block; width: auto; max-width: min(100%, 15rem); max-height: 8rem; margin: 0 auto 1.25rem; }
+  .eyebrow {
+    margin: 0 0 0.625rem;
+    font: 600 0.75rem/1 var(--font-body); letter-spacing: 0.18em; text-transform: uppercase;
+    color: var(--accent);
+  }
+  h1 { margin: 0; font: 700 clamp(1.75rem, 6vw, 2.5rem)/1.1 var(--font-display); }
+  .date { margin: 0.5rem 0 0; font-size: 1.0625rem; font-weight: 500; color: rgba(255, 255, 255, 0.86); }
+
+  /* Password box, like the in-person page's. */
+  .lock { margin: 2rem 0 0; }
+  .row { display: flex; gap: 0.5rem; width: min(100%, 22rem); margin: 0 auto; }
+  input.text {
+    flex: 1; min-width: 0; width: 100%; height: 3rem; padding: 0 0.875rem;
+    border-radius: 0.75rem; border: 1px solid rgba(255, 255, 255, 0.18); background: var(--field);
+    font-size: 1rem;
+  }
+  input.text::placeholder { color: rgba(255, 255, 255, 0.36); }
+  input.text:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 0.1875rem rgba(143, 163, 224, 0.28); }
+  input.text[aria-invalid="true"] { border-color: var(--danger); }
+  .btn {
+    flex: none; height: 3rem; padding: 0 1.375rem; border-radius: 999px;
+    border: 1px solid #fff; background: #fff; color: var(--ink);
+    font-weight: 600; cursor: pointer;
+  }
+  .btn:hover { border-color: var(--accent); background: var(--accent); }
+  .btn[disabled] { opacity: 0.6; cursor: progress; }
+  .btn.ghost { border-color: rgba(255, 255, 255, 0.24); background: var(--field); color: var(--text); }
+  .btn.ghost:hover { border-color: rgba(255, 255, 255, 0.5); }
+  .btn.small { height: 2.25rem; padding: 0 0.875rem; font-size: 0.8125rem; }
+  .btn.danger { border-color: rgba(255, 154, 154, 0.5); background: var(--field); color: var(--danger); }
+  .btn.danger:hover { border-color: var(--danger); background: #3b214d; }
+  .error {
+    width: fit-content; max-width: 100%; margin: 0.75rem auto 0; padding: 0.375rem 0.875rem;
+    border-radius: 999px; background: var(--card); color: var(--danger); font-size: 0.875rem; text-align: center;
+  }
+  .error:empty { display: none; }
+
+  .back {
+    display: inline-flex; align-items: center; gap: 0.375rem; margin: 1.5rem 0 0;
+    padding: 0.5rem 0.875rem; border-radius: 999px; border: 1px solid var(--line); background: var(--card);
+    color: var(--text); font-size: 0.875rem; font-weight: 500; text-decoration: none;
+  }
+  .back:hover { border-color: rgba(255, 255, 255, 0.5); }
+
+  .card {
+    margin: 1.25rem 0 0; padding: 1.25rem;
+    border-radius: 1rem; border: 1px solid var(--line); background: var(--card);
+  }
+  .card h2 { margin: 0; font: 700 1.125rem/1.2 var(--font-display); }
+  .sub { margin: 0.25rem 0 0; color: var(--muted); font-size: 0.875rem; }
+  .warn {
+    margin: 1.25rem 0 0; padding: 0.875rem 1rem; border-radius: 0.75rem;
+    border: 1px solid rgba(242, 200, 121, 0.45); background: #3a2a3f; color: #f6e2b8; font-size: 0.9rem;
+  }
+  .warn b { color: #fff; }
+
+  /* Menu */
+  .menu { display: grid; gap: 0.75rem; margin: 2rem 0 0; padding: 0; list-style: none; }
+  .tile {
+    display: flex; align-items: center; justify-content: space-between; gap: 1rem;
+    padding: 1.125rem 1.25rem; border-radius: 1rem; border: 1px solid var(--line); background: var(--card);
+    color: var(--text); text-decoration: none;
+    transition: border-color 0.15s, transform 0.15s;
+  }
+  .tile:hover { border-color: rgba(255, 255, 255, 0.45); }
+  .tile:active { transform: scale(0.99); }
+  .tile-title { display: block; font: 700 1.25rem/1.2 var(--font-display); }
+  .tile-sub { display: block; margin-top: 0.25rem; color: var(--muted); font-size: 0.875rem; }
+  .tile .arrow { flex: none; color: var(--muted); font-size: 1.25rem; }
+  .tile .peek { flex: none; font: 700 1.75rem/1 var(--font-display); letter-spacing: 0.08em; }
+  .links { display: flex; flex-wrap: wrap; justify-content: center; gap: 0.5rem; margin: 1.25rem 0 0; }
+  .links a {
+    padding: 0.5rem 0.875rem; border-radius: 999px; border: 1px solid var(--line); background: var(--card);
+    color: var(--text); font-size: 0.875rem; font-weight: 500; text-decoration: none;
+  }
+  .links a:hover { border-color: rgba(255, 255, 255, 0.5); }
+  .foot { margin: 1.5rem 0 0; text-align: center; }
+
+  /* The code, big enough to read out or show across the booth. */
+  .code-card { text-align: center; }
+  .code {
+    margin: 0.75rem 0 0.25rem;
+    font: 700 clamp(4rem, 22vw, 6.5rem)/1 var(--font-display);
+    letter-spacing: 0.12em; font-variant-numeric: tabular-nums;
+    /* The letter spacing also follows the last digit, so this keeps it centred. */
+    padding-left: 0.12em;
+  }
+  .pill {
+    display: inline-flex; align-items: center; gap: 0.5rem; margin: 0.5rem 0 0;
+    padding: 0.375rem 0.75rem; border-radius: 999px; border: 1px solid var(--line);
+    font-size: 0.8125rem; font-weight: 500;
+  }
+  .pill::before { content: ''; flex: none; width: 0.5rem; height: 0.5rem; border-radius: 50%; background: var(--muted); }
+  .pill.live::before { background: var(--ok); }
+  .code-card .sub { max-width: 30rem; margin: 0.875rem auto 0; }
+  .code-card .btn { margin-top: 1rem; }
+  .updated { margin: 1rem 0 0; color: var(--muted); font-size: 0.8125rem; text-align: center; }
+
+  /* Sign-ups */
+  .tabs { display: flex; gap: 0.25rem; margin: 1.25rem 0 0; padding: 0.25rem; border-radius: 999px; background: var(--card); border: 1px solid var(--line); }
+  .tabs button {
+    flex: 1; min-width: 0; padding: 0.5rem 0.75rem; border: 0; border-radius: 999px; background: none;
+    color: var(--muted); font-size: 0.875rem; font-weight: 600; cursor: pointer;
+  }
+  .tabs button[aria-selected="true"] { background: #fff; color: var(--ink); }
+  .people { margin: 0.875rem 0 0; padding: 0; list-style: none; border-top: 1px solid var(--line); }
+  .people li {
+    display: grid; grid-template-columns: 6.5rem minmax(0, 1fr) auto; align-items: center; gap: 0.25rem 0.75rem;
+    padding: 0.625rem 0; border-bottom: 1px solid var(--line);
+  }
+  .when { color: var(--muted); font-size: 0.8125rem; }
+  .when b { display: block; color: var(--text); font-weight: 600; }
+  .who { min-width: 0; overflow-wrap: anywhere; }
+  .dj { font-weight: 600; }
+  .more { color: var(--muted); font-size: 0.8125rem; }
+  .open .who { color: rgba(255, 255, 255, 0.38); font-style: italic; }
+
+  /* Posters: the poster page itself, sized to fit so the whole admin page scrolls as one. */
+  .poster-frame { display: block; width: 100%; height: 80vh; margin: 1.25rem 0 0; border: 0; }
+
+  /* Editing a sign-up */
+  dialog {
+    width: min(28rem, calc(100vw - 2rem)); max-height: calc(100dvh - 2rem); padding: 0;
+    border: 1px solid rgba(255, 255, 255, 0.14); border-radius: 1.375rem;
+    background: var(--card); color: var(--text); box-shadow: 0 1.875rem 5rem rgba(0, 0, 0, 0.5);
+    overflow: auto;
+  }
+  dialog::backdrop { background: rgba(12, 8, 18, 0.72); backdrop-filter: blur(0.25rem); }
+  .sheet { padding: 1.5rem 1.25rem 1.25rem; }
+  .sheet h2 { margin: 0; font: 700 1.375rem/1.2 var(--font-display); }
+  .field { margin-top: 1rem; }
+  .field label { display: flex; justify-content: space-between; margin-bottom: 0.375rem; font-size: 0.875rem; font-weight: 600; }
+  .optional { font-weight: 400; color: var(--muted); }
+  .handle { position: relative; }
+  .handle span { position: absolute; left: 0.875rem; top: 50%; transform: translateY(-50%); color: var(--muted); pointer-events: none; }
+  .handle input { padding-left: 2rem; }
+  .sheet .error { margin: 1rem 0 0; }
+  .sheet-actions { display: grid; gap: 0.5rem; margin-top: 1.25rem; }
+  .sheet-actions .btn { width: 100%; }
+
+  @media (max-width: 480px) {
+    .people li { grid-template-columns: minmax(0, 1fr) auto; }
+    .people .when { grid-column: 1 / -1; display: flex; gap: 0.5rem; align-items: baseline; }
+    .people .when b { display: inline; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { animation: none !important; transition: none !important; }
+  }
+</style>
+</head>
+<body>
+<main class="wrap" id="wrap">
+  <header>
+    <img class="logo" src="logo.png" alt="CT Open Decks">
+    <p class="eyebrow" id="eyebrow">Admin</p>
+    <h1 id="title">Admin</h1>
+    <p id="date" class="date" hidden></p>
+  </header>
+
+  <form id="lock" class="lock" novalidate hidden>
+    <label for="key" class="visually-hidden">Password</label>
+    <div class="row">
+      <input id="key" class="text" name="key" placeholder="Password" autocomplete="current-password" type="password" autocapitalize="none" autocorrect="off" spellcheck="false" enterkeyhint="go">
+      <button id="open" class="btn" type="submit">Open</button>
+    </div>
+    <p id="lock-error" class="error" role="alert"></p>
+  </form>
+
+  <div id="app" hidden>
+    <a id="back" class="back" href="#" hidden>&larr; Menu</a>
+    <p id="app-error" class="error" role="alert"></p>
+
+    <!-- The menu. Each section below is one item; add new ones the same way. -->
+    <section id="view-menu" aria-label="Menu">
+      <ul class="menu">
+        <li><a class="tile" href="#code">
+          <span><span class="tile-title">Show-night code</span><span class="tile-sub" id="menu-code-sub"></span></span>
+          <span class="peek" id="menu-code"></span>
+        </a></li>
+        <li><a class="tile" href="#signups">
+          <span><span class="tile-title">Sign-ups</span><span class="tile-sub" id="menu-signups-sub">Change or remove anyone</span></span>
+          <span class="arrow" aria-hidden="true">&rarr;</span>
+        </a></li>
+        <li><a class="tile" href="#posters">
+          <span><span class="tile-title">Posters</span><span class="tile-sub">Make this month's posters</span></span>
+          <span class="arrow" aria-hidden="true">&rarr;</span>
+        </a></li>
+        <li><a class="tile" id="menu-sheet" target="_blank" rel="noopener">
+          <span><span class="tile-title">Google Sheet</span><span class="tile-sub">Settings, the archive and everything else</span></span>
+          <span class="arrow" aria-hidden="true">&nearr;</span>
+        </a></li>
+      </ul>
+      <nav class="links" aria-label="Your public pages">
+        <a href="./" target="_blank" rel="noopener">Sign-up page</a>
+        <a href="in-person" target="_blank" rel="noopener">In-person page</a>
+      </nav>
+      <div class="foot">
+        <button id="lock-again" class="btn ghost small" type="button">Lock this page</button>
+      </div>
+    </section>
+
+    <section id="view-code" aria-labelledby="code-title" hidden>
+      <div class="card code-card">
+        <h2 id="code-title">Show-night code</h2>
+        <p id="code" class="code" aria-live="polite"></p>
+        <p id="code-status" class="pill"></p>
+        <p class="sub">It changes by itself as soon as someone signs up with it. Anyone who already typed it in can still finish signing up.</p>
+        <button id="new-code" class="btn ghost small" type="button">New code (if someone overheard it)</button>
+      </div>
+      <p class="updated" id="code-updated"></p>
+    </section>
+
+    <section id="view-signups" aria-labelledby="signups-title" hidden>
+      <h2 id="signups-title" class="visually-hidden">Sign-ups</h2>
+      <p id="empty-lineup" class="warn" hidden><b>Your Lineup tab has no slots.</b> Copy the times and rooms (A2:B13) from the In-person tab into A2 of the Lineup tab, or the 5 am move after the show can't place anyone.</p>
+      <div class="tabs" role="tablist" aria-label="Which show">
+        <button type="button" role="tab" id="tab-lineup" aria-selected="true" aria-controls="signups-card">This month</button>
+        <button type="button" role="tab" id="tab-in-person" aria-selected="false" aria-controls="signups-card">Next month</button>
+      </div>
+      <div class="card" id="signups-card" role="tabpanel">
+        <h2 id="list-title"></h2>
+        <p id="list-sub" class="sub"></p>
+        <ul id="people" class="people"></ul>
+      </div>
+      <p class="updated" id="signups-updated"></p>
+    </section>
+
+    <section id="view-posters" aria-label="Posters" hidden>
+      <iframe id="poster-frame" class="poster-frame" title="Posters"></iframe>
+    </section>
+  </div>
+</main>
+
+<dialog id="editor" aria-labelledby="editor-title">
+  <form id="editor-form" class="sheet" novalidate>
+    <p class="eyebrow" id="editor-eyebrow"></p>
+    <h2 id="editor-title"></h2>
+    <div class="field">
+      <label for="e-performance">Performance name</label>
+      <input id="e-performance" class="text" name="performanceName" maxlength="80" autocomplete="off">
+    </div>
+    <div class="field">
+      <label for="e-name">Name</label>
+      <input id="e-name" class="text" name="name" maxlength="80" autocomplete="off">
+    </div>
+    <div class="field">
+      <label for="e-email">Email <span class="optional">Optional</span></label>
+      <input id="e-email" class="text" name="email" type="email" inputmode="email" maxlength="254" autocomplete="off">
+    </div>
+    <div class="field">
+      <label for="e-instagram">Instagram <span class="optional">Optional</span></label>
+      <div class="handle">
+        <span aria-hidden="true">@</span>
+        <input id="e-instagram" class="text" name="instagram" maxlength="80" autocapitalize="none" autocorrect="off" spellcheck="false" autocomplete="off">
+      </div>
+    </div>
+    <p id="editor-error" class="error" role="alert"></p>
+    <div class="sheet-actions">
+      <button id="editor-save" class="btn" type="submit">Save</button>
+      <button id="editor-remove" class="btn danger" type="button">Remove from this slot</button>
+      <button class="btn ghost" type="button" data-close>Cancel</button>
+    </div>
+  </form>
+</dialog>
+
+<script>
+const CONFIG = {
+  // The same Apps Script web app URL as index.html (it ends in /exec).
+  apiUrl: 'https://script.google.com/macros/s/AKfycbwZntnJesyS-5fPQT9PHJyThZiSTxXhL__geIVGaDWVkGVpOe7ROJcwM9jBscPxTZfdYQ/exec',
+  // How often each screen checks for changes, in seconds. The code screen checks often, so a new
+  // code shows up moments after someone signs up.
+  refreshSeconds: { menu: 5, code: 3, signups: 10 },
+};
+
+// Your admin password stays on this device until you press "Lock this page".
+const KEY_STORAGE = 'admin-key';
+const VIEWS = ['menu', 'code', 'signups', 'posters'];
+
+const $ = (id) => document.getElementById(id);
+const editor = $('editor');
+const state = { key: savedKey(), data: null, view: 'menu', list: 'lineup', editing: null, loadedAt: 0, loading: false };
+
+function savedKey() {
+  try {
+    return localStorage.getItem(KEY_STORAGE) || '';
+  } catch {
+    return '';
+  }
+}
+
+function rememberKey(key) {
+  state.key = key;
+  try {
+    if (key) localStorage.setItem(KEY_STORAGE, key);
+    else localStorage.removeItem(KEY_STORAGE);
+  } catch {
+    // Private browsing can refuse storage. It still works until the page reloads.
+  }
+}
+
+// Sent as text/plain so the browser doesn't need a CORS preflight, which Apps Script can't answer.
+async function post(body) {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 20000);
+  try {
+    const res = await fetch(CONFIG.apiUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify(body),
+      cache: 'no-store',
+      signal: controller.signal,
+    });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    return await res.json();
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+// Every admin call sends the password and gets the whole page's data back.
+const ask = (action, extra = {}) => post({ action, key: state.key, ...extra });
+
+function el(tag, className, text) {
+  const node = document.createElement(tag);
+  if (className) node.className = className;
+  if (text != null) node.textContent = text;
+  return node;
+}
+
+const startTime = (time) => time.split(/\s*[–—-]\s*/)[0];
+const showTitle = (show) => [show.session && `Session ${show.session}`, show.date].filter(Boolean).join(' · ');
+const clock = () => new Date().toLocaleTimeString([], { hour: 'numeric', minute: '2-digit', second: '2-digit' });
+
+// ---- Screens --------------------------------------------------------------
+
+function showLock(message = '') {
+  state.data = null;
+  if (editor.open) editor.close();
+  $('app').hidden = true;
+  $('lock').hidden = false;
+  $('lock-error').textContent = message;
+  $('title').textContent = 'Admin';
+  $('date').hidden = true;
+  $('wrap').classList.remove('wide');
+}
+
+// Which screen to show comes from the end of the address (#code, #signups, #posters), so the
+// back button and bookmarks work.
+function route() {
+  const name = location.hash.slice(1);
+  state.view = VIEWS.includes(name) ? name : 'menu';
+  for (const view of VIEWS) $(`view-${view}`).hidden = view !== state.view;
+  $('back').hidden = state.view === 'menu';
+  $('wrap').classList.toggle('wide', state.view === 'posters');
+  if (state.view === 'posters' && !$('poster-frame').src) $('poster-frame').src = 'poster?embedded';
+  if (state.data) render();
+  // Fresh numbers whenever you open the code or the sign-ups.
+  if (state.data && (state.view === 'code' || state.view === 'signups')) load();
+  window.scrollTo(0, 0);
+}
+
+function render() {
+  const { data } = state;
+  $('lock').hidden = true;
+  $('app').hidden = false;
+  $('eyebrow').textContent = { menu: 'Admin', code: 'Admin · Code', signups: 'Admin · Sign-ups', posters: 'Admin · Posters' }[state.view];
+  $('title').textContent = data.event.session ? `Session ${data.event.session}` : data.event.name;
+  $('date').textContent = data.event.date;
+  $('date').hidden = !data.event.date;
+
+  // Menu
+  $('menu-code').textContent = data.code;
+  $('menu-code-sub').textContent = data.showNight ? 'Working now' : 'Works on show night from 6 pm';
+  const booked = data.lineup.filter((s) => s.booked).length;
+  const inPerson = data.inPerson.filter((s) => s.booked).length;
+  $('menu-signups-sub').textContent = `${booked} of ${data.lineup.length} booked · ${inPerson} in person for next month`;
+  $('menu-sheet').href = data.sheetUrl;
+
+  // Code
+  $('code').textContent = data.code;
+  $('code-status').className = data.showNight ? 'pill live' : 'pill';
+  $('code-status').textContent = data.showNight
+    ? 'Working now: give it to the next person'
+    : `Works on show night${data.event.date ? `, ${data.event.date},` : ''} from 6 pm. Your password works any time.`;
+  $('code-updated').textContent = `Checked at ${clock()}`;
+
+  renderSignUps();
+}
+
+function renderSignUps() {
+  const { data } = state;
+  const lineup = state.list === 'lineup';
+  $('tab-lineup').setAttribute('aria-selected', String(lineup));
+  $('tab-in-person').setAttribute('aria-selected', String(!lineup));
+  $('empty-lineup').hidden = data.lineup.length > 0;
+
+  const slots = lineup ? data.lineup : data.inPerson;
+  const show = lineup ? data.event : data.next;
+  const booked = slots.filter((s) => s.booked).length;
+  $('list-title').textContent = showTitle(show) || (lineup ? 'This month' : 'Next month');
+  $('list-sub').textContent = lineup
+    ? `${booked} of ${slots.length} booked · online sign-ups ${data.signupsOpen ? 'on' : 'off'}`
+    : `${booked} signed up in person. They move into the lineup at 5 am after this month's show.`;
+
+  // One row per slot: the time and room, who's in it (or "Open"), and a button to change it.
+  $('people').replaceChildren(...slots.map((slot) => {
+    const row = el('li', slot.booked ? '' : 'open');
+    const when = el('div', 'when');
+    when.append(el('b', '', startTime(slot.time)), slot.room);
+    const who = el('div', 'who');
+    if (slot.booked) {
+      who.append(el('div', 'dj', slot.performanceName || slot.name));
+      const more = [slot.performanceName && slot.name, slot.email, slot.instagram].filter(Boolean).join(' · ');
+      if (more) who.append(el('div', 'more', more));
+    } else {
+      who.textContent = 'Open';
+    }
+    const button = el('button', 'btn ghost small', slot.booked ? 'Edit' : 'Add');
+    button.type = 'button';
+    button.setAttribute('aria-label', `${slot.booked ? 'Edit' : 'Add someone to'} ${slot.time}, ${slot.room}`);
+    button.addEventListener('click', () => openEditor(slot));
+    row.append(when, who, button);
+    return row;
+  }));
+  $('signups-updated').textContent = `Checked at ${clock()}`;
+}
+
+// ---- Talking to the sheet --------------------------------------------------
+
+// Handles what comes back from any admin call. False when it didn't work.
+function took(data) {
+  if (data.ok) {
+    state.data = data;
+    state.loadedAt = Date.now();
+    $('app-error').textContent = '';
+    render();
+    return true;
+  }
+  if (data.code === 'key') {
+    // Most likely the password was changed in Settings.
+    rememberKey('');
+    showLock('Enter your password again.');
+  }
+  return false;
+}
+
+async function load(action = 'admin') {
+  if (!state.key) return showLock();
+  if (state.loading && action === 'admin') return;
+  state.loading = true;
+  const asked = state.key;
+  try {
+    const data = await ask(action);
+    if (state.key !== asked) return;
+    if (!took(data)) $('app-error').textContent = data.message || 'Something went wrong. Try again.';
+  } catch (err) {
+    console.error(err);
+    // A missed check keeps what's on screen. The next one tries again.
+    if (state.data) $('app-error').textContent = "Couldn't reach the sheet. Trying again…";
+    else showLock("Couldn't reach the sign-up sheet. Check your connection and try again.");
+  } finally {
+    state.loading = false;
+  }
+}
+
+$('lock').addEventListener('submit', async (event) => {
+  event.preventDefault();
+  const input = $('key');
+  const key = input.value.trim();
+  if (!key) {
+    $('lock-error').textContent = 'Please enter your password.';
+    input.focus();
+    return;
+  }
+  $('open').disabled = true;
+  $('open').textContent = 'Checking…';
+  let data;
+  try {
+    data = await post({ action: 'admin', key });
+  } catch (err) {
+    console.error(err);
+    data = { ok: false, message: "Couldn't reach the sign-up sheet. Check your connection and try again." };
+  } finally {
+    $('open').disabled = false;
+    $('open').textContent = 'Open';
+  }
+  if (!data.ok) {
+    $('lock-error').textContent = data.message || 'Something went wrong. Try again.';
+    input.setAttribute('aria-invalid', 'true');
+    input.focus();
+    return;
+  }
+  rememberKey(key);
+  input.value = '';
+  input.removeAttribute('aria-invalid');
+  took(data);
+});
+
+$('new-code').addEventListener('click', async () => {
+  const button = $('new-code');
+  if (button.disabled) return;
+  const label = button.textContent;
+  button.disabled = true;
+  button.textContent = 'Making a new code…';
+  await load('new-code');
+  button.disabled = false;
+  button.textContent = label;
+});
+
+$('lock-again').addEventListener('click', () => {
+  rememberKey('');
+  showLock();
+  $('key').focus();
+});
+
+for (const [id, list] of [['tab-lineup', 'lineup'], ['tab-in-person', 'in-person']]) {
+  $(id).addEventListener('click', () => {
+    state.list = list;
+    renderSignUps();
+  });
+}
+
+// ---- Editing a sign-up ----------------------------------------------------
+
+function openEditor(slot) {
+  state.editing = { slot, tab: state.list };
+  const f = $('editor-form').elements;
+  $('editor-eyebrow').textContent = state.list === 'lineup' ? showTitle(state.data.event) : `${showTitle(state.data.next)} · in person`;
+  $('editor-title').textContent = `${startTime(slot.time)} · ${slot.room}`;
+  f.performanceName.value = slot.performanceName;
+  f.name.value = slot.name;
+  f.email.value = slot.email;
+  f.instagram.value = slot.instagram.replace(/^@/, '');
+  $('editor-save').textContent = slot.booked ? 'Save' : 'Add to this slot';
+  $('editor-remove').hidden = !slot.booked;
+  $('editor-error').textContent = '';
+  editorBusy(false);
+  editor.showModal();
+  f.performanceName.focus();
+}
+
+function editorBusy(busy) {
+  state.editorBusy = busy;
+  for (const button of editor.querySelectorAll('button')) button.disabled = busy;
+}
+
+async function change(action, extra) {
+  const { slot, tab } = state.editing;
+  editorBusy(true);
+  let data;
+  try {
+    data = await ask(action, { tab, slotId: slot.id, ...extra });
+  } catch (err) {
+    console.error(err);
+    data = { ok: false, message: "Couldn't reach the sheet. Check your connection and try again." };
+  }
+  editorBusy(false);
+  if (took(data)) {
+    editor.close();
+    return;
+  }
+  if (data.code === 'key') return;
+  $('editor-error').textContent = data.message || 'Something went wrong. Try again.';
+  // Someone booked that slot or it changed in the sheet: show the list as it is now.
+  if (data.code === 'taken' || data.code === 'missing') load();
+}
+
+$('editor-form').addEventListener('submit', (event) => {
+  event.preventDefault();
+  if (state.editorBusy) return;
+  const f = $('editor-form').elements;
+  if (!f.performanceName.value.trim() && !f.name.value.trim()) {
+    $('editor-error').textContent = 'Enter a name or a performance name.';
+    f.performanceName.focus();
+    return;
+  }
+  change('save', {
+    wasBooked: state.editing.slot.booked,
+    performanceName: f.performanceName.value,
+    name: f.name.value,
+    email: f.email.value,
+    instagram: f.instagram.value,
+  });
+});
+
+$('editor-remove').addEventListener('click', () => {
+  if (state.editorBusy) return;
+  const { slot } = state.editing;
+  const who = slot.performanceName || slot.name;
+  if (!confirm(`Remove ${who} from ${startTime(slot.time)} in the ${slot.room}? The slot opens up again.`)) return;
+  change('remove');
+});
+
+editor.addEventListener('click', (event) => {
+  // A click on the backdrop lands on the dialog itself.
+  if ((event.target === editor || event.target.closest('[data-close]')) && !state.editorBusy) editor.close();
+});
+editor.addEventListener('cancel', (event) => {
+  if (state.editorBusy) event.preventDefault();
+});
+
+// ---- Posters ----------------------------------------------------------------
+
+// The poster page sits in the admin page at its full height, so there's only one scrollbar.
+$('poster-frame').addEventListener('load', () => {
+  const frame = $('poster-frame');
+  const doc = frame.contentDocument;
+  if (!doc) return;
+  const fit = () => { frame.style.height = `${doc.documentElement.scrollHeight}px`; };
+  new ResizeObserver(fit).observe(doc.body);
+  fit();
+});
+
+// ---- Start ----------------------------------------------------------------
+
+window.addEventListener('hashchange', route);
+route();
+load();
+
+setInterval(() => {
+  const every = CONFIG.refreshSeconds[state.view];
+  if (!every || !state.data || editor.open || document.visibilityState !== 'visible') return;
+  if (Date.now() - state.loadedAt >= every * 1000) load();
+}, 1000);
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible' && state.data) load();
+});
+</script>
+</body>
+</html>

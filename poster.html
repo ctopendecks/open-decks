@@ -156,7 +156,18 @@
     .poster canvas { transition: opacity 0.15s; }
   }
   .busy canvas { opacity: 0.6; }
+
+  /* Inside the admin page (poster?embedded): no background or heading of its own, since the
+     admin page has both. */
+  .embedded body { min-height: 0; background: transparent; }
+  .embedded body::before { display: none; }
+  .embedded .wrap { padding: 0 0 1rem; }
+  .embedded header .eyebrow, .embedded header h1, .embedded header .date { display: none; }
+  .embedded .status { margin-top: 0; }
 </style>
+<script>
+  if (new URLSearchParams(location.search).has('embedded')) document.documentElement.classList.add('embedded');
+</script>
 </head>
 <body>
 <main class="wrap">
