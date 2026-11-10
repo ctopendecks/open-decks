@@ -241,7 +241,7 @@
     <section id="view-menu" aria-label="Menu">
       <ul class="menu">
         <li><a class="tile" href="#code">
-          <span><span class="tile-title">Show-night code</span><span class="tile-sub" id="menu-code-sub"></span></span>
+          <span><span class="tile-title">Sign-up code</span><span class="tile-sub" id="menu-code-sub"></span></span>
           <span class="peek" id="menu-code"></span>
         </a></li>
         <li><a class="tile" href="#signups">
@@ -268,9 +268,9 @@
 
     <section id="view-code" aria-labelledby="code-title" hidden>
       <div class="card code-card">
-        <h2 id="code-title">Show-night code</h2>
+        <h2 id="code-title">Sign-up code</h2>
         <p id="code" class="code" aria-live="polite"></p>
-        <p id="code-status" class="pill"></p>
+        <p id="code-status" class="pill live"></p>
         <p class="sub">It changes by itself as soon as someone signs up with it. Anyone who already typed it in can still finish signing up.</p>
         <button id="new-code" class="btn ghost small" type="button">New code (if someone overheard it)</button>
       </div>
@@ -437,7 +437,7 @@ function render() {
 
   // Menu
   $('menu-code').textContent = data.code;
-  $('menu-code-sub').textContent = data.showNight ? 'Working now' : 'Works on show night from 6 pm';
+  $('menu-code-sub').textContent = data.showNight ? "It's show night: give it to the next person" : 'Works any day';
   const booked = data.lineup.filter((s) => s.booked).length;
   const inPerson = data.inPerson.filter((s) => s.booked).length;
   $('menu-signups-sub').textContent = `${booked} of ${data.lineup.length} booked · ${inPerson} in person for next month`;
@@ -445,10 +445,9 @@ function render() {
 
   // Code
   $('code').textContent = data.code;
-  $('code-status').className = data.showNight ? 'pill live' : 'pill';
   $('code-status').textContent = data.showNight
-    ? 'Working now: give it to the next person'
-    : `Works on show night${data.event.date ? `, ${data.event.date},` : ''} from 6 pm. Your password works any time.`;
+    ? 'Show night: give it to the next person'
+    : 'Works any day, for anyone you want to sign up for next month';
   $('code-updated').textContent = `Checked at ${clock()}`;
 
   renderSignUps();

@@ -203,9 +203,18 @@
   }
   .message button:hover { background: #fff; color: var(--ink); }
 
-  /* The in-person code or password box: just the field and its button, under the date. */
-  .gate { margin: 2rem 0 0; }
-  .gate-label { display: block; margin: 0 0 0.875rem; text-align: center; font: 700 1.375rem/1.2 var(--font-display); }
+  /* The in-person code box, on a solid card under the date. */
+  .gate {
+    width: min(100%, 28rem); margin: 2rem auto 0; padding: 1.5rem 1.25rem;
+    border-radius: var(--radius); border: 1px solid var(--line); background: var(--card); text-align: center;
+  }
+  .gate-closed { margin: 0 0 1.25rem; padding: 0 0 1.25rem; border-bottom: 1px solid var(--line); }
+  .gate-closed h2 { margin: 0; font: 700 1.375rem/1.2 var(--font-display); text-wrap: balance; }
+  .gate-closed p { margin: 0.5rem 0 0; color: var(--muted); }
+  .gate-closed .nowrap { white-space: nowrap; }
+  .gate-label { display: block; margin: 0 0 0.875rem; font: 700 1.375rem/1.2 var(--font-display); }
+  /* Under "closed", the code box is the small print. */
+  .gate-label.quiet { font: 600 0.9375rem/1.4 var(--font-body); }
   .gate-row { display: flex; gap: 0.5rem; width: min(100%, 22rem); margin: 0 auto; }
   .gate-row input {
     flex: 1; min-width: 0; height: 3rem; padding: 0 0.875rem;
@@ -223,10 +232,7 @@
   }
   .gate-row button:hover { border-color: var(--accent); background: var(--accent); }
   .gate-row button[disabled] { opacity: 0.6; cursor: progress; }
-  .gate .form-error {
-    width: fit-content; max-width: 100%; margin: 0.75rem auto 0; padding: 0.375rem 0.875rem;
-    border-radius: 62.4375rem; background: var(--card); text-align: center;
-  }
+  .gate .form-error { margin: 0.75rem 0 0; }
 
   .demo {
     position: fixed; left: 50%; bottom: 1rem; transform: translateX(-50%);
@@ -360,12 +366,16 @@
   <section aria-labelledby="slots-heading">
     <h2 id="slots-heading" class="visually-hidden">Open slots</h2>
     <div id="slots" aria-live="polite"></div>
-    <!-- In-person page only: the show-night code or your password, before the slots show. -->
+    <!-- In-person page only: the sign-up code from your admin page, before the slots show. -->
     <form id="gate" class="gate" novalidate hidden>
-      <label id="gate-label" for="gate-key" class="gate-label visually-hidden">Password</label>
+      <div id="gate-closed" class="gate-closed">
+        <h2><span class="nowrap">In-person</span> <span class="nowrap">sign-ups</span> are closed</h2>
+        <p id="gate-when"></p>
+      </div>
+      <label id="gate-label" for="gate-key" class="gate-label">Enter the 4-digit code</label>
       <div class="gate-row">
-        <input id="gate-key" name="key" placeholder="Password" autocomplete="off" autocapitalize="none" autocorrect="off" spellcheck="false" enterkeyhint="go">
-        <button id="gate-submit" type="submit">Unlock</button>
+        <input id="gate-key" name="key" placeholder="Code" inputmode="numeric" maxlength="4" autocomplete="off" enterkeyhint="go">
+        <button id="gate-submit" type="submit">Continue</button>
       </div>
       <p id="gate-error" class="form-error" role="alert"></p>
     </form>
@@ -466,12 +476,12 @@ const dialog = $('dialog');
 const form = $('form');
 
 // The in-person page: this page with ?in-person on the end (in-person.html sends people here).
-// It signs people up for the next show, with the show-night code or your password.
+// It signs people up for the next show, with the 4-digit code from your admin page.
 const IN_PERSON = new URLSearchParams(location.search).has('in-person');
 
-// What opened the in-person page: the pass a show-night code gave this phone, or your password.
-// Kept for this tab only, so a reload doesn't ask again, but it's gone once the tab is closed. A pass
-// is dropped once it has booked a slot, since each one is good for one sign-up.
+// The pass the code gave this phone. Kept for this tab only, so a reload doesn't ask again, but
+// it's gone once the tab is closed. It's dropped once it has booked a slot, since each one is good
+// for one sign-up.
 const KEY_STORAGE = 'in-person-key';
 
 // details: what they typed, kept between Continue and Confirm slot.
@@ -496,11 +506,10 @@ function rememberKey(key) {
   }
 }
 
-// Back to the code or password box, when the one they used stops working.
+// Back to the code box, when their pass stops working (the 5 am reset ends them).
 function lockAgain(message) {
-  const hadPassword = state.data && state.data.via === 'password';
   rememberKey('');
-  $('gate-error').textContent = hadPassword ? 'The password has changed. Enter the new one.' : message || '';
+  $('gate-error').textContent = message || '';
 }
 
 // ---- Backend --------------------------------------------------------------
@@ -524,7 +533,7 @@ function remoteApi(url) {
     body: JSON.stringify(body),
   });
   return {
-    // Once the in-person code or password is in, the slots come with it, so it asks with that.
+    // Once the in-person code is in, the slots come with its pass, so it asks with that.
     load: () => (IN_PERSON && state.key
       ? post({ action: 'unlock', key: state.key })
       : call({ method: 'GET' }, IN_PERSON ? '?mode=in-person' : '')),
@@ -549,7 +558,7 @@ function demoApi() {
       return {
         ok: true,
         event: { name: 'CT Open Decks', session: 22, date: 'Wednesday, December 9' },
-        // The demo skips the in-person code and password.
+        // The demo skips the in-person code.
         unlocked: true,
         signupsOpen: true,
         oneSlotPerEmail: true,
@@ -579,9 +588,9 @@ async function refresh({ quiet = false } = {}) {
   const asked = state.key;
   try {
     const data = await api.load();
-    // A code or password went in (or out) while this was loading. That already showed the right thing.
+    // A code went in (or a pass out) while this was loading. That already showed the right thing.
     if (state.key !== asked) return;
-    // Their pass ran out (the 5 am reset), or the password changed: ask again.
+    // Their pass ran out (the 5 am reset): ask for a code again.
     if (data.code === 'key') {
       lockAgain(data.message);
       return refresh({ quiet });
@@ -628,15 +637,16 @@ function renderLoading() {
   $('slots').replaceChildren(board);
 }
 
-// The in-person page before it's opened. On show night it asks for the 4-digit code you hand
-// out. The rest of the time it's just your password box.
+// The in-person page before it's opened. On show night it just asks for the 4-digit code you hand
+// out. The rest of the time it says sign-ups are closed, with the code box underneath for anyone
+// you've given a code to.
 function renderGate() {
-  const code = Boolean(state.data.showNight);
-  const input = $('gate-key');
-  $('gate-label').textContent = code ? 'Enter the 4-digit code' : 'Password';
-  $('gate-label').classList.toggle('visually-hidden', !code);
-  input.placeholder = code ? 'Code' : 'Password';
-  input.inputMode = code ? 'numeric' : 'text';
+  const night = Boolean(state.data.showNight);
+  const day = showDay(state.data.opensAt);
+  $('gate-closed').hidden = night;
+  $('gate-when').textContent = `They open at the show${day ? ` on ${day}` : ''}.`;
+  $('gate-label').textContent = night ? 'Enter the 4-digit code' : 'If you have a sign-up code, enter it here';
+  $('gate-label').classList.toggle('quiet', !night);
   $('slots').replaceChildren();
   $('gate').hidden = false;
 }
@@ -892,9 +902,9 @@ $('confirm-submit').addEventListener('click', async () => {
     state.data.slots = state.data.slots.map((s) => (s.id === slot.id ? { ...s, taken: true } : s));
     // A pass is good for one sign-up, so behind the "You're on the lineup" box the page locks
     // again for the next person.
-    if (state.data.via === 'code') {
+    if (IN_PERSON) {
       rememberKey('');
-      state.data = { ...state.data, unlocked: false, via: '', signupsOpen: false, slots: [] };
+      state.data = { ...state.data, unlocked: false, signupsOpen: false, slots: [] };
     }
     render();
     // At the show, the date on its own line makes clear it's next month's slot, not tonight's.
@@ -909,7 +919,7 @@ $('confirm-submit').addEventListener('click', async () => {
   }
 
   if (result.code === 'key') {
-    // Their pass ran out (the 5 am reset), or the password changed. What they typed stays in the form.
+    // Their pass ran out (the 5 am reset). What they typed stays in the form.
     lockAgain(result.message);
     dialog.close();
     refresh({ quiet: true });
@@ -932,7 +942,7 @@ $('confirm-submit').addEventListener('click', async () => {
   $('confirm-error').textContent = result.message || 'Something went wrong. Try again.';
 });
 
-// ---- In-person code and password ------------------------------------------
+// ---- In-person code -------------------------------------------------------
 
 $('gate').addEventListener('submit', async (event) => {
   event.preventDefault();
@@ -945,7 +955,7 @@ $('gate').addEventListener('submit', async (event) => {
     input.setAttribute('aria-invalid', 'true');
     input.focus();
   };
-  if (!key) return fail(state.data.showNight ? 'Please enter the code.' : 'Please enter the password.');
+  if (!key) return fail('Please enter the code.');
 
   button.disabled = true;
   button.textContent = 'Checking…';
@@ -957,7 +967,7 @@ $('gate').addEventListener('submit', async (event) => {
     data = { ok: false, message: "Couldn't reach the sign-up sheet. Check your connection and try again." };
   } finally {
     button.disabled = false;
-    button.textContent = 'Unlock';
+    button.textContent = 'Continue';
   }
   if (!data.ok) return fail(data.message || 'Something went wrong. Try again.');
 
