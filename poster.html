@@ -3,6 +3,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<!-- Tells the Dark Reader browser extension to leave the colors alone; the page is already dark. -->
+<meta name="darkreader-lock">
 <title>CT Open Decks Posters</title>
 <meta name="robots" content="noindex">
 <meta name="theme-color" content="#2e045c">
@@ -73,6 +75,8 @@
     font-size: 0.875rem; font-weight: 500; color: rgba(255, 255, 255, 0.86);
   }
   .status::before { content: ''; width: 0.5rem; height: 0.5rem; border-radius: 50%; background: var(--muted); }
+  .status.loading::before { display: none; }
+  .status .jog { width: 1.375rem; height: 1.375rem; }
   .status.full::before { background: var(--ok); }
   .status.open::before { background: #f2c879; }
   .status.error { color: #ffd9d9; border-color: rgba(255, 154, 154, 0.35); background: #3b214d; }
@@ -164,6 +168,27 @@
   .embedded .wrap { padding: 0 0 1rem; }
   .embedded header .eyebrow, .embedded header h1, .embedded header .date { display: none; }
   .embedded .status { margin-top: 0; }
+  /* A spinning purple jog wheel, like a CDJ's, shown whenever something is loading. */
+  .jog {
+    position: relative; display: inline-block; flex: none; width: 2rem; height: 2rem; border-radius: 50%;
+    vertical-align: middle; box-shadow: 0 0.125rem 0.375rem rgba(0, 0, 0, 0.5);
+  }
+  .jog::before {
+    content: ''; position: absolute; inset: 0; border-radius: 50%;
+    background: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><defs><radialGradient id='r'><stop offset='.72' stop-color='%23341470'/><stop offset='.88' stop-color='%23240b52'/><stop offset='1' stop-color='%23100426'/></radialGradient><radialGradient id='b' cx='.38' cy='.32' r='.75'><stop offset='0' stop-color='%23b291ff'/><stop offset='.45' stop-color='%235f2fb8'/><stop offset='1' stop-color='%231a0740'/></radialGradient><radialGradient id='p' cx='.42' cy='.36' r='.7'><stop offset='0' stop-color='%23441c88'/><stop offset='.7' stop-color='%23260c56'/><stop offset='1' stop-color='%23170636'/></radialGradient><radialGradient id='h' cx='.4' cy='.35' r='.7'><stop offset='0' stop-color='%23552aa6'/><stop offset='1' stop-color='%23240b52'/></radialGradient></defs><circle cx='50' cy='50' r='49.5' fill='url(%23r)'/><circle cx='50.00' cy='7.40' r='4.7' fill='url(%23b)'/><circle cx='61.03' cy='8.85' r='4.7' fill='url(%23b)'/><circle cx='71.30' cy='13.11' r='4.7' fill='url(%23b)'/><circle cx='80.12' cy='19.88' r='4.7' fill='url(%23b)'/><circle cx='86.89' cy='28.70' r='4.7' fill='url(%23b)'/><circle cx='91.15' cy='38.97' r='4.7' fill='url(%23b)'/><circle cx='92.60' cy='50.00' r='4.7' fill='url(%23b)'/><circle cx='91.15' cy='61.03' r='4.7' fill='url(%23b)'/><circle cx='86.89' cy='71.30' r='4.7' fill='url(%23b)'/><circle cx='80.12' cy='80.12' r='4.7' fill='url(%23b)'/><circle cx='71.30' cy='86.89' r='4.7' fill='url(%23b)'/><circle cx='61.03' cy='91.15' r='4.7' fill='url(%23b)'/><circle cx='50.00' cy='92.60' r='4.7' fill='url(%23b)'/><circle cx='38.97' cy='91.15' r='4.7' fill='url(%23b)'/><circle cx='28.70' cy='86.89' r='4.7' fill='url(%23b)'/><circle cx='19.88' cy='80.12' r='4.7' fill='url(%23b)'/><circle cx='13.11' cy='71.30' r='4.7' fill='url(%23b)'/><circle cx='8.85' cy='61.03' r='4.7' fill='url(%23b)'/><circle cx='7.40' cy='50.00' r='4.7' fill='url(%23b)'/><circle cx='8.85' cy='38.97' r='4.7' fill='url(%23b)'/><circle cx='13.11' cy='28.70' r='4.7' fill='url(%23b)'/><circle cx='19.88' cy='19.88' r='4.7' fill='url(%23b)'/><circle cx='28.70' cy='13.11' r='4.7' fill='url(%23b)'/><circle cx='38.97' cy='8.85' r='4.7' fill='url(%23b)'/><circle cx='50' cy='50' r='37' fill='%230e0322'/><circle cx='50' cy='50' r='35.6' fill='url(%23p)'/><circle cx='50' cy='50' r='15' fill='url(%23h)' stroke='%230e0322' stroke-width='1.5'/><circle cx='50' cy='50' r='15.8' fill='none' stroke='%239a74ef' stroke-opacity='.55' stroke-width='.8'/><rect x='48.8' y='17' width='2.4' height='8' rx='1.2' fill='%23c4adff'/></svg>") center / 100% 100% no-repeat;
+    animation: jog-spin 1.6s linear infinite;
+  }
+  /* The shine stays put while the wheel turns under it. */
+  .jog::after {
+    content: ''; position: absolute; inset: 0; border-radius: 50%;
+    background:
+      radial-gradient(circle at 34% 26%, rgba(255, 255, 255, 0.3), rgba(255, 255, 255, 0) 42%),
+      radial-gradient(circle at 70% 80%, rgba(0, 0, 0, 0.3), rgba(0, 0, 0, 0) 55%);
+  }
+  @keyframes jog-spin { to { transform: rotate(1turn); } }
+  @media (prefers-reduced-motion: reduce) { .jog::before { animation-duration: 6s; } }
+  /* Smaller, inside a button. */
+  button .jog { width: 1.25rem; height: 1.25rem; margin: 0 0.5rem 0 0; vertical-align: -0.25em; }
 </style>
 <script>
   if (new URLSearchParams(location.search).has('embedded')) document.documentElement.classList.add('embedded');
@@ -175,7 +200,7 @@
     <p class="eyebrow">Posters</p>
     <h1 id="title">CT Open Decks</h1>
     <p class="date" id="date"></p>
-    <p class="status" id="status" role="status">Loading the lineup…</p>
+    <p class="status loading" id="status" role="status"><span class="jog" aria-hidden="true"></span>Loading the lineup…</p>
   </header>
 
   <section class="colors" aria-labelledby="colors-title">
@@ -769,7 +794,7 @@ function fileName(kind) {
 async function download(kind) {
   const { button, note } = state.previews[kind];
   button.disabled = true;
-  button.textContent = 'Making…';
+  showLoading(button, 'Making…');
   note.hidden = true;
   // Lets the button change before the full-size drawing holds things up.
   await new Promise((resolve) => setTimeout(resolve, 30));
@@ -806,6 +831,14 @@ async function downloadAll() {
   } finally {
     all.disabled = false;
   }
+}
+
+// Shows the spinning jog wheel in front of a "…ing" label while something loads.
+function showLoading(node, text) {
+  const jog = document.createElement('span');
+  jog.className = 'jog';
+  jog.setAttribute('aria-hidden', 'true');
+  node.replaceChildren(jog, text);
 }
 
 function setStatus(text, kind) {
