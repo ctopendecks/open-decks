@@ -53,7 +53,7 @@
     content: ''; position: fixed; z-index: -1; top: 0; left: 0; width: 100%; height: 100vh; height: 100lvh;
     background: var(--bg) url('background.jpg') center / cover no-repeat;
   }
-  button, input { font: inherit; color: inherit; }
+  button, input, textarea { font: inherit; color: inherit; }
   :focus-visible { outline: 0.125rem solid #fff; outline-offset: 0.1875rem; }
   .visually-hidden {
     position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0;
@@ -76,14 +76,14 @@
   /* Password box, like the in-person page's. */
   .lock { margin: 2rem 0 0; }
   .row { display: flex; gap: 0.5rem; width: min(100%, 22rem); margin: 0 auto; }
-  input.text {
+  .text {
     flex: 1; min-width: 0; width: 100%; height: 3rem; padding: 0 0.875rem;
     border-radius: 0.75rem; border: 1px solid rgba(255, 255, 255, 0.18); background: var(--field);
     font-size: 1rem;
   }
-  input.text::placeholder { color: rgba(255, 255, 255, 0.36); }
-  input.text:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 0.1875rem rgba(143, 163, 224, 0.28); }
-  input.text[aria-invalid="true"] { border-color: var(--danger); }
+  .text::placeholder { color: rgba(255, 255, 255, 0.36); }
+  .text:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 0.1875rem rgba(143, 163, 224, 0.28); }
+  .text[aria-invalid="true"] { border-color: var(--danger); }
   .btn {
     flex: none; height: 3rem; padding: 0 1.375rem; border-radius: 999px;
     border: 1px solid #fff; background: #fff; color: var(--ink);
@@ -182,6 +182,35 @@
   .more { color: var(--muted); font-size: 0.8125rem; }
   .open .who { color: rgba(255, 255, 255, 0.38); font-style: italic; }
 
+  /* QR code screen */
+  .qr-view { text-align: center; }
+  .qr-img { display: block; width: min(100%, 28rem); height: auto; margin: 1.25rem auto 0; border-radius: 1rem; }
+  .qr-card { width: min(100%, 28rem); margin: 1rem auto 0; padding: 1rem; }
+  .qr-label { margin: 0; color: var(--muted); font-size: 0.875rem; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; }
+  .qr-card .code { margin: 0.5rem 0 0; }
+
+  /* Settings */
+  .settings fieldset { min-width: 0; }
+  .settings legend { float: left; width: 100%; margin: 0 0 0.25rem; padding: 0; font: 700 1.125rem/1.2 var(--font-display); }
+  .settings legend + * { clear: both; }
+  textarea.text { height: auto; min-height: 14rem; padding: 0.75rem 0.875rem; line-height: 1.45; resize: vertical; font: inherit; }
+  .hint { margin: 0.375rem 0 0; color: var(--muted); font-size: 0.8125rem; }
+  .check { display: flex; gap: 0.75rem; align-items: flex-start; padding: 0.75rem 0; border-bottom: 1px solid var(--line); cursor: pointer; }
+  .check:last-of-type { border-bottom: 0; }
+  .check input { flex: none; width: 1.25rem; height: 1.25rem; margin: 0.125rem 0 0; accent-color: var(--accent); }
+  .check span { color: var(--muted); font-size: 0.8125rem; }
+  .check b { display: block; color: var(--text); font-size: 0.9375rem; font-weight: 600; }
+  .settings .card > .btn { margin-top: 1rem; }
+  /* Save stays in reach at the bottom of the screen while you scroll. */
+  .save-bar {
+    position: sticky; bottom: 0; display: flex; align-items: center; justify-content: flex-end; gap: 0.75rem;
+    margin: 1.25rem -1rem 0; padding: 0.875rem 1rem calc(0.875rem + env(safe-area-inset-bottom));
+    background: var(--card); border-top: 1px solid var(--line);
+  }
+  .status { flex: 1; margin: 0; font-size: 0.875rem; color: var(--muted); }
+  .status.ok { color: var(--ok); }
+  .status.bad { color: var(--danger); }
+
   /* Posters: the poster page itself, sized to fit so the whole admin page scrolls as one. */
   .poster-frame { display: block; width: 100%; height: 80vh; margin: 1.25rem 0 0; border: 0; }
 
@@ -244,12 +273,20 @@
           <span><span class="tile-title">Sign-up code</span><span class="tile-sub" id="menu-code-sub"></span></span>
           <span class="peek" id="menu-code"></span>
         </a></li>
+        <li><a class="tile" href="#qr">
+          <span><span class="tile-title">QR code</span><span class="tile-sub">Show people the QR code and the sign-up code</span></span>
+          <span class="arrow" aria-hidden="true">&rarr;</span>
+        </a></li>
         <li><a class="tile" href="#signups">
           <span><span class="tile-title">Sign-ups</span><span class="tile-sub" id="menu-signups-sub">Change or remove anyone</span></span>
           <span class="arrow" aria-hidden="true">&rarr;</span>
         </a></li>
         <li><a class="tile" href="#posters">
           <span><span class="tile-title">Posters</span><span class="tile-sub">Make this month's posters</span></span>
+          <span class="arrow" aria-hidden="true">&rarr;</span>
+        </a></li>
+        <li><a class="tile" href="#settings">
+          <span><span class="tile-title">Settings</span><span class="tile-sub">Show date, sign-ups, emails and the reminder</span></span>
           <span class="arrow" aria-hidden="true">&rarr;</span>
         </a></li>
         <li><a class="tile" id="menu-sheet" target="_blank" rel="noopener">
@@ -277,6 +314,15 @@
       <p class="updated" id="code-updated"></p>
     </section>
 
+    <!-- For showing people at the show: scan, then type the code underneath. -->
+    <section id="view-qr" class="qr-view" aria-label="QR code" hidden>
+      <img class="qr-img" src="signup-qr.png" alt="QR code for the in-person sign-up page">
+      <div class="card qr-card">
+        <p class="qr-label">Sign-up code</p>
+        <p id="qr-code" class="code" aria-live="polite"></p>
+      </div>
+    </section>
+
     <section id="view-signups" aria-labelledby="signups-title" hidden>
       <h2 id="signups-title" class="visually-hidden">Sign-ups</h2>
       <p id="empty-lineup" class="warn" hidden><b>Your Lineup tab has no slots.</b> Copy the times and rooms (A2:B13) from the In-person tab into A2 of the Lineup tab, or the 5 am move after the show can't place anyone.</p>
@@ -291,6 +337,79 @@
       </div>
       <p class="updated" id="signups-updated"></p>
     </section>
+
+    <!-- The Settings tab of your sheet. Nothing changes until you press Save settings. -->
+    <form id="view-settings" class="settings" aria-labelledby="settings-title" novalidate hidden>
+      <h2 id="settings-title" class="visually-hidden">Settings</h2>
+
+      <fieldset class="card">
+        <legend>The show</legend>
+        <div class="field">
+          <label for="s-eventName">Event name</label>
+          <input id="s-eventName" class="text" maxlength="80" autocomplete="off">
+          <p class="hint">Used in emails and the browser tab.</p>
+        </div>
+        <div class="field">
+          <label for="s-session">Session number</label>
+          <input id="s-session" class="text" inputmode="numeric" maxlength="4" autocomplete="off">
+          <p class="hint">Goes up by 1 by itself at 5 am after each show. Leave it empty to hide it.</p>
+        </div>
+        <div class="field">
+          <label for="s-eventDay">Next show</label>
+          <input id="s-eventDay" class="text" type="date">
+          <p class="hint">Moves to the 2nd Wednesday of the next month by itself at 5 am after each show.</p>
+        </div>
+      </fieldset>
+
+      <fieldset class="card">
+        <legend>Sign-ups</legend>
+        <label class="check"><input type="checkbox" id="s-open"><span><b>Online sign-ups open</b>Untick to close them. They open again by themselves at 5 am after the show.</span></label>
+        <label class="check"><input type="checkbox" id="s-oneSlotPerEmail"><span><b>One slot per email</b>Stops one person booking more than one slot.</span></label>
+      </fieldset>
+
+      <fieldset class="card">
+        <legend>Emails</legend>
+        <label class="check"><input type="checkbox" id="s-emailOwner"><span><b>Email me on each sign-up</b>With anything they wrote in Other.</span></label>
+        <label class="check"><input type="checkbox" id="s-confirm"><span><b>Send DJs a confirmation</b>Emails each DJ their slot. Replies come to you.</span></label>
+        <label class="check"><input type="checkbox" id="s-cancelByReply"><span><b>Cancel by reply</b>DJs can reply CANCEL to open their slot back up. Checked about every 10 minutes.</span></label>
+        <label class="check"><input type="checkbox" id="s-emailFull"><span><b>Email me when the lineup is full</b>With a link to the posters.</span></label>
+        <div class="field">
+          <label for="s-posterPage">Poster link for that email <span class="optional">Optional</span></label>
+          <input id="s-posterPage" class="text" inputmode="url" maxlength="300" autocomplete="off" autocapitalize="none" spellcheck="false">
+          <p class="hint">For example this page's address with #posters on the end.</p>
+        </div>
+      </fieldset>
+
+      <fieldset class="card">
+        <legend>Reminder</legend>
+        <label class="check"><input type="checkbox" id="s-remind"><span><b>Send the reminder</b>Goes to everyone on the lineup around noon, 3 days before the show.</span></label>
+        <div class="field">
+          <label for="s-reminderSubject">Subject</label>
+          <input id="s-reminderSubject" class="text" maxlength="200" autocomplete="off">
+        </div>
+        <div class="field">
+          <label for="s-reminderMessage">Message</label>
+          <textarea id="s-reminderMessage" class="text" rows="16"></textarea>
+          <p class="hint">Words in {curly brackets} are filled in for each person: {name}, {performance name}, {time}, {room}, {date}, {event} (the name and session), {session} (just the number) and {lineup} (the whole schedule).</p>
+        </div>
+        <button id="test-reminder" class="btn ghost small" type="button">Email me a test reminder</button>
+        <p class="hint" id="test-reminder-note">It uses the saved wording, so save first if you've changed it.</p>
+      </fieldset>
+
+      <fieldset class="card">
+        <legend>Admin password</legend>
+        <div class="field">
+          <label for="s-adminPassword">New admin password <span class="optional">Optional</span></label>
+          <input id="s-adminPassword" class="text" type="password" autocomplete="new-password" autocapitalize="none" spellcheck="false">
+          <p class="hint">Leave it empty to keep the one you have. At least 6 letters or numbers.</p>
+        </div>
+      </fieldset>
+
+      <div class="save-bar">
+        <p id="settings-status" class="status" role="status"></p>
+        <button id="save-settings" class="btn" type="submit">Save settings</button>
+      </div>
+    </form>
 
     <section id="view-posters" aria-label="Posters" hidden>
       <iframe id="poster-frame" class="poster-frame" title="Posters"></iframe>
@@ -336,16 +455,17 @@ const CONFIG = {
   apiUrl: 'https://script.google.com/macros/s/AKfycbwZntnJesyS-5fPQT9PHJyThZiSTxXhL__geIVGaDWVkGVpOe7ROJcwM9jBscPxTZfdYQ/exec',
   // How often each screen checks for changes, in seconds. The code screen checks often, so a new
   // code shows up moments after someone signs up.
-  refreshSeconds: { menu: 5, code: 3, signups: 10 },
+  refreshSeconds: { menu: 5, code: 3, qr: 3, signups: 10 },
 };
 
 // Your admin password stays on this device until you press "Lock this page".
 const KEY_STORAGE = 'admin-key';
-const VIEWS = ['menu', 'code', 'signups', 'posters'];
+const VIEWS = ['menu', 'code', 'qr', 'signups', 'settings', 'posters'];
 
 const $ = (id) => document.getElementById(id);
 const editor = $('editor');
-const state = { key: savedKey(), data: null, view: 'menu', list: 'lineup', editing: null, loadedAt: 0, loading: false };
+// settingsEdited: you've typed in the Settings form, so fresh data from the sheet doesn't write over it.
+const state = { key: savedKey(), data: null, view: 'menu', list: 'lineup', editing: null, loadedAt: 0, loading: false, settingsEdited: false };
 
 function savedKey() {
   try {
@@ -411,7 +531,7 @@ function showLock(message = '') {
   $('wrap').classList.remove('wide');
 }
 
-// Which screen to show comes from the end of the address (#code, #signups, #posters), so the
+// Which screen to show comes from the end of the address (#code, #signups, #settings, #posters), so the
 // back button and bookmarks work.
 function route() {
   const name = location.hash.slice(1);
@@ -419,10 +539,13 @@ function route() {
   for (const view of VIEWS) $(`view-${view}`).hidden = view !== state.view;
   $('back').hidden = state.view === 'menu';
   $('wrap').classList.toggle('wide', state.view === 'posters');
+  // Settings always opens with what's in the sheet now.
+  state.settingsEdited = false;
+  $('settings-status').textContent = '';
   if (state.view === 'posters' && !$('poster-frame').src) $('poster-frame').src = 'poster?embedded';
   if (state.data) render();
   // Fresh numbers whenever you open the code or the sign-ups.
-  if (state.data && (state.view === 'code' || state.view === 'signups')) load();
+  if (state.data && ['code', 'qr', 'signups', 'settings'].includes(state.view)) load();
   window.scrollTo(0, 0);
 }
 
@@ -430,7 +553,9 @@ function render() {
   const { data } = state;
   $('lock').hidden = true;
   $('app').hidden = false;
-  $('eyebrow').textContent = { menu: 'Admin', code: 'Admin · Code', signups: 'Admin · Sign-ups', posters: 'Admin · Posters' }[state.view];
+  $('eyebrow').textContent = {
+    menu: 'Admin', code: 'Admin · Code', qr: 'Admin · QR code', signups: 'Admin · Sign-ups', settings: 'Admin · Settings', posters: 'Admin · Posters',
+  }[state.view];
   $('title').textContent = data.event.session ? `Session ${data.event.session}` : data.event.name;
   $('date').textContent = data.event.date;
   $('date').hidden = !data.event.date;
@@ -445,12 +570,14 @@ function render() {
 
   // Code
   $('code').textContent = data.code;
+  $('qr-code').textContent = data.code;
   $('code-status').textContent = data.showNight
     ? 'Show night: give it to the next person'
     : 'Works any day, for anyone you want to sign up for next month';
   $('code-updated').textContent = `Checked at ${clock()}`;
 
   renderSignUps();
+  if (state.view === 'settings' && !state.settingsEdited) showSettings();
 }
 
 function renderSignUps() {
@@ -663,6 +790,79 @@ editor.addEventListener('click', (event) => {
 });
 editor.addEventListener('cancel', (event) => {
   if (state.editorBusy) event.preventDefault();
+});
+
+// ---- Settings ---------------------------------------------------------------
+
+// The Settings form's boxes and tick boxes, by the name the sheet's data uses.
+const TEXT_SETTINGS = ['eventName', 'session', 'eventDay', 'posterPage', 'reminderSubject', 'reminderMessage'];
+const TICK_SETTINGS = ['open', 'oneSlotPerEmail', 'emailOwner', 'confirm', 'cancelByReply', 'emailFull', 'remind'];
+
+function showSettings() {
+  const { settings } = state.data;
+  for (const name of TEXT_SETTINGS) $(`s-${name}`).value = settings[name] == null ? '' : settings[name];
+  for (const name of TICK_SETTINGS) $(`s-${name}`).checked = Boolean(settings[name]);
+  $('s-adminPassword').value = '';
+}
+
+function settingsStatus(text, kind = '') {
+  $('settings-status').textContent = text;
+  $('settings-status').className = `status ${kind}`;
+}
+
+$('view-settings').addEventListener('input', () => {
+  state.settingsEdited = true;
+  settingsStatus('Not saved yet');
+});
+
+$('view-settings').addEventListener('submit', async (event) => {
+  event.preventDefault();
+  const button = $('save-settings');
+  if (button.disabled) return;
+  const settings = {};
+  for (const name of TEXT_SETTINGS) settings[name] = $(`s-${name}`).value;
+  for (const name of TICK_SETTINGS) settings[name] = $(`s-${name}`).checked;
+  const newPassword = $('s-adminPassword').value.trim();
+  if (newPassword) settings.adminPassword = newPassword;
+
+  button.disabled = true;
+  button.textContent = 'Saving…';
+  let data;
+  try {
+    data = await ask('save-settings', { settings });
+  } catch (err) {
+    console.error(err);
+    data = { ok: false, message: "Couldn't reach the sheet. Check your connection and try again." };
+  }
+  button.disabled = false;
+  button.textContent = 'Save settings';
+  if (!data.ok && data.code === 'key') return took(data);
+  if (!data.ok) return settingsStatus(data.message || 'Something went wrong. Try again.', 'bad');
+  // From now on this page signs in with the new password.
+  if (newPassword) rememberKey(newPassword);
+  state.settingsEdited = false;
+  took(data);
+  settingsStatus(newPassword ? 'Saved, with your new password' : 'Saved', 'ok');
+});
+
+$('test-reminder').addEventListener('click', async () => {
+  const button = $('test-reminder');
+  if (button.disabled) return;
+  button.disabled = true;
+  button.textContent = 'Sending…';
+  let data;
+  try {
+    data = await ask('test-reminder');
+  } catch (err) {
+    console.error(err);
+    data = { ok: false, message: "Couldn't reach the sheet. Check your connection and try again." };
+  }
+  button.disabled = false;
+  button.textContent = 'Email me a test reminder';
+  if (!data.ok && data.code === 'key') return took(data);
+  $('test-reminder-note').textContent = data.ok
+    ? `Sent to ${data.sentTo}. It uses the saved wording.`
+    : data.message || 'Something went wrong. Try again.';
 });
 
 // ---- Posters ----------------------------------------------------------------
