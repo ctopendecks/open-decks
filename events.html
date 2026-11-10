@@ -99,9 +99,9 @@
   .compact h1 { font-size: 1.5rem; }
   .compact .banner { margin-top: 1rem; padding: 0.625rem 1rem; }
   .compact .banner h2 { font-size: 1.0625rem; }
-  .compact .banner p { font-size: 0.8125rem; }
-  /* At most three across, so six dates make two even rows. */
-  .compact .shows { grid-template-columns: repeat(auto-fill, minmax(max(15rem, calc((100% - 1rem) / 3)), 1fr)); gap: 0.5rem; margin-top: 0.5rem; }
+  .compact .banner p { max-width: none; font-size: 0.8125rem; }
+  /* Two across on bigger screens, one on phones. */
+  .compact .shows { grid-template-columns: repeat(auto-fill, minmax(max(15rem, calc((100% - 0.5rem) / 2)), 1fr)); gap: 0.5rem; margin-top: 0.5rem; }
   .compact .show { gap: 0.75rem; padding: 0.625rem 0.875rem; border-radius: 0.75rem; }
   .compact .day { width: 3rem; height: 3rem; border-radius: 0.625rem; }
   .compact .day b { font-size: 0.625rem; }
@@ -258,6 +258,22 @@ async function load() {
     }
   }
 }
+
+// Embedded: tells the page around it how tall to make the box: the message plus the first
+// VISIBLE_SHOWS dates (4 in two rows on bigger screens, 2 on phones). The rest scroll inside.
+const VISIBLE_SHOWS = { phone: 2, wide: 4 };
+function reportHeight() {
+  if (!document.documentElement.classList.contains('embedded') || window.parent === window) return;
+  const wrap = document.querySelector('.wrap');
+  const first = document.querySelectorAll('.show')[phone.matches ? VISIBLE_SHOWS.phone : VISIBLE_SHOWS.wide];
+  // Cut just above the first date that doesn't fit, or show everything if they all do.
+  const height = first
+    ? first.getBoundingClientRect().top - wrap.getBoundingClientRect().top + wrap.scrollTop - 4
+    : wrap.scrollHeight;
+  window.parent.postMessage({ ctodEventsHeight: Math.ceil(height) }, '*');
+}
+new ResizeObserver(reportHeight).observe(document.querySelector('.wrap'));
+for (const child of document.querySelector('.wrap').children) new ResizeObserver(reportHeight).observe(child);
 
 load();
 setInterval(() => { if (document.visibilityState === 'visible') load(); }, CONFIG.refreshMinutes * 60000);
