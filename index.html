@@ -479,31 +479,14 @@ const form = $('form');
 // It signs people up for the next show, with the 4-digit code from your admin page.
 const IN_PERSON = new URLSearchParams(location.search).has('in-person');
 
-// The pass the code gave this phone. Kept for this tab only, so a reload doesn't ask again, but
-// it's gone once the tab is closed. It's dropped once it has booked a slot, since each one is good
-// for one sign-up.
-const KEY_STORAGE = 'in-person-key';
-
 // details: what they typed, kept between Continue and Confirm slot.
-const state = { data: null, error: false, selected: null, details: null, busy: false, key: IN_PERSON ? savedKey() : '' };
+// key: the pass the code gave this phone. It only lives in the open page, so a refresh or closing
+// the tab means asking you for a new code. It's dropped once it has booked a slot.
+const state = { data: null, error: false, selected: null, details: null, busy: false, key: '' };
 const api = CONFIG.apiUrl ? remoteApi(CONFIG.apiUrl) : demoApi();
-
-function savedKey() {
-  try {
-    return sessionStorage.getItem(KEY_STORAGE) || '';
-  } catch {
-    return '';
-  }
-}
 
 function rememberKey(key) {
   state.key = key;
-  try {
-    if (key) sessionStorage.setItem(KEY_STORAGE, key);
-    else sessionStorage.removeItem(KEY_STORAGE);
-  } catch {
-    // Private browsing can refuse storage. It still works until the page reloads.
-  }
 }
 
 // Back to the code box, when their pass stops working (the 5 am reset ends them).
