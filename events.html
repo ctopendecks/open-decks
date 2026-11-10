@@ -113,6 +113,20 @@
   .compact .footnote { margin-top: 0.625rem; font-size: 0.8125rem; }
   /* Embedded, the dates start right at the top of the box. */
   .embedded .shows, .embedded .message { margin-top: 0; }
+  /* While the dates load, the message sits in the middle of the box. */
+  .embedded .wrap.loading { display: flex; flex-direction: column; justify-content: center; }
+  .loading .message { display: flex; align-items: center; justify-content: center; gap: 0.625rem; }
+  /* A spinning record while the dates load. */
+  .record {
+    flex: none; width: 1.75rem; height: 1.75rem; border-radius: 50%;
+    background:
+      radial-gradient(circle, #e59ad0 0 17%, #1a1424 18% 22%, transparent 23%),
+      conic-gradient(rgba(255, 255, 255, 0.28) 0 8%, transparent 14% 50%, rgba(255, 255, 255, 0.28) 50% 58%, transparent 64%),
+      repeating-radial-gradient(circle, #0d0a12 0 1.5px, #2b2236 1.5px 2.5px);
+    animation: spin 1.4s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(1turn); } }
+  @media (prefers-reduced-motion: reduce) { .record { animation-duration: 4s; } }
 </style>
 <script>
   // Embedded (events?embedded): no logo, heading or background, compact rows. Phones get compact rows too.
@@ -124,13 +138,13 @@
 </script>
 </head>
 <body>
-<main class="wrap">
+<main class="wrap loading">
   <header>
     <img class="logo" src="logo.png" alt="CT Open Decks">
     <h1>Upcoming events</h1>
   </header>
   <ul class="shows" id="shows" aria-live="polite" aria-busy="true"></ul>
-  <p class="message" id="message" role="status">Loading dates…</p>
+  <p class="message" id="message" role="status"><span class="record" aria-hidden="true"></span>Loading dates…</p>
   <p class="footnote" id="footnote" hidden>Future events will be added as we get closer.</p>
 </main>
 
@@ -173,6 +187,7 @@ function venueLine() {
 }
 
 function render(data) {
+  document.querySelector('.wrap').classList.remove('loading');
   $('message').hidden = true;
   const list = $('shows');
   list.removeAttribute('aria-busy');
