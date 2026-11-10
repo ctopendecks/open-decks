@@ -10,7 +10,7 @@
 <link rel="preload" href="CT-Open-Decks.ttf" as="font" type="font/ttf" crossorigin>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Space+Grotesk:wght@600&display=swap" rel="stylesheet">
 <style>
   @font-face {
     font-family: 'CT Open Decks';
@@ -69,7 +69,8 @@
   .banner.open { border-color: rgba(155, 227, 184, 0.55); }
   .banner h2 { margin: 0; font: 700 1.25rem/1.2 var(--font-display); }
   .banner.open h2 { color: var(--ok); }
-  .banner p { margin: 0.25rem auto 0; max-width: 46ch; color: var(--muted); font-size: 0.9375rem; }
+  /* The message in your website's own text style (Space Grotesk), so it reads as part of the page. */
+  .banner p { margin: 0.25rem auto 0; max-width: 46ch; color: #fafafa; font: 600 0.9375rem/1.6 'Space Grotesk', var(--font-body); }
 
   /* One column on phones, two on tablets, three on desktops. */
   .shows { display: grid; grid-template-columns: repeat(auto-fill, minmax(18rem, 1fr)); gap: 1rem; margin: 2rem 0 0; padding: 0; list-style: none; }
@@ -99,7 +100,7 @@
   .compact h1 { font-size: 1.5rem; }
   .compact .banner { margin-top: 1rem; padding: 0.625rem 1rem; }
   .compact .banner h2 { font-size: 1.0625rem; }
-  .compact .banner p { max-width: none; font-size: 0.8125rem; }
+  .compact .banner p { max-width: none; font-size: 0.875rem; }
   /* Two across on bigger screens, one on phones. */
   .compact .shows { grid-template-columns: repeat(auto-fill, minmax(max(15rem, calc((100% - 0.5rem) / 2)), 1fr)); gap: 0.5rem; margin-top: 0.5rem; }
   .compact .show { gap: 0.75rem; padding: 0.625rem 0.875rem; border-radius: 0.75rem; }
@@ -113,13 +114,18 @@
   .compact .when .time { display: inline; color: inherit; font-size: inherit; white-space: nowrap; }
   .compact .when .time::before { content: ' · '; }
   .compact .where { margin-top: 0.125rem; font-size: 0.75rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .compact .skeleton { min-height: 4.25rem; }
   /* Embedded, the page keeps its size and scrolls inside the box rather than growing past it. */
   .embedded, .embedded body { height: 100%; }
   .embedded .wrap { height: 100%; overflow-y: auto; padding: 0.25rem; }
   .embedded .banner { margin-top: 0; }
-  .message { margin: 2rem auto 0; max-width: 30rem; padding: 1.5rem; border-radius: 1rem; background: var(--card); text-align: center; color: var(--muted); }
-  .skeleton { min-height: 7rem; }
+  /* "Loading dates…" and other notes, in your website's text style. */
+  .message {
+    margin: 2rem auto 0; max-width: 30rem; padding: 1.25rem; border-radius: 1rem; background: var(--card);
+    text-align: center; color: #fafafa; font: 600 0.9375rem/1.6 'Space Grotesk', var(--font-body);
+  }
+  .footnote { margin: 1rem 0 0; text-align: center; color: #fafafa; font: 600 0.9375rem/1.6 'Space Grotesk', var(--font-body); }
+  .compact .message { margin-top: 0.5rem; padding: 0.875rem; font-size: 0.875rem; }
+  .compact .footnote { margin-top: 0.625rem; font-size: 0.8125rem; }
 </style>
 <script>
   // Embedded (events?embedded): no logo, heading or background, compact rows. Phones get compact rows too.
@@ -138,10 +144,9 @@
   </header>
   <!-- Whether sign-ups are open right now, filled in from the sheet. -->
   <div class="banner" id="banner" role="status" hidden></div>
-  <ul class="shows" id="shows" aria-live="polite" aria-busy="true">
-    <li class="show skeleton"></li><li class="show skeleton"></li><li class="show skeleton"></li>
-  </ul>
-  <p class="message" id="message" hidden></p>
+  <ul class="shows" id="shows" aria-live="polite" aria-busy="true"></ul>
+  <p class="message" id="message" role="status">Loading dates…</p>
+  <p class="footnote" id="footnote" hidden>Future events will be added as we get closer.</p>
 </main>
 
 <script>
@@ -223,8 +228,10 @@ function render(data) {
     list.replaceChildren();
     $('message').textContent = 'New dates coming soon.';
     $('message').hidden = false;
+    $('footnote').hidden = true;
     return;
   }
+  $('footnote').hidden = false;
   list.replaceChildren(...data.shows.map((show, i) => {
     const item = el('li', 'show');
     const [month, date] = monthDay(show.day);
