@@ -192,14 +192,29 @@ async function load() {
     // A failed check keeps what's on screen.
     if (!loaded) $('status').replaceChildren(el('p', '', "Couldn't check sign-ups. Try again in a minute."));
   }
+  fit();
 }
 
-// Embedded: tells the page around it how tall to make the box, so nothing is cut off.
-function reportHeight() {
-  if (!document.documentElement.classList.contains('embedded') || window.parent === window) return;
-  window.parent.postMessage({ ctodStatusHeight: Math.ceil($('status').getBoundingClientRect().height) + 8 }, '*');
+// Embedded: tells the page around it how tall the box wants to be, and if the embed is shorter
+// than that (a narrow phone, or bigger text settings), shrinks everything until it fits, so the
+// bottom is never cut off.
+function fit() {
+  const root = document.documentElement;
+  if (!root.classList.contains('embedded')) return;
+  const box = $('status');
+  const needed = () => Math.ceil(box.getBoundingClientRect().height) + 8;
+  root.style.fontSize = '';
+  if (window.parent !== window) window.parent.postMessage({ ctodStatusHeight: needed() }, '*');
+  let size = parseFloat(getComputedStyle(root).fontSize);
+  while (needed() > innerHeight && size > 10) {
+    size *= 0.95;
+    root.style.fontSize = `${size}px`;
+  }
 }
-new ResizeObserver(reportHeight).observe($('status'));
+addEventListener('resize', fit);
+// The text gets a little taller once the fonts arrive.
+document.fonts.ready.then(fit);
+fit();
 
 load();
 setInterval(() => { if (document.visibilityState === 'visible') load(); }, CONFIG.refreshMinutes * 60000);
