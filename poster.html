@@ -22,7 +22,8 @@
   :root {
     /* The darkest purple in background.jpg, shown while it loads. */
     --bg: #2e045c;
-    --card: rgba(255, 255, 255, 0.045);
+    /* Solid, so the background never shows through the text. */
+    --card: #251344;
     --line: rgba(255, 255, 255, 0.12);
     --text: #ffffff;
     --muted: rgba(255, 255, 255, 0.62);
@@ -68,13 +69,13 @@
   .status {
     display: inline-flex; align-items: center; gap: 0.5rem;
     margin: 1.25rem 0 0; padding: 0.4375rem 0.875rem; border-radius: 999px;
-    background: rgba(255, 255, 255, 0.06); border: 1px solid var(--line);
+    background: var(--card); border: 1px solid var(--line);
     font-size: 0.875rem; font-weight: 500; color: rgba(255, 255, 255, 0.86);
   }
   .status::before { content: ''; width: 0.5rem; height: 0.5rem; border-radius: 50%; background: var(--muted); }
   .status.full::before { background: var(--ok); }
   .status.open::before { background: #f2c879; }
-  .status.error { color: #ffd9d9; border-color: rgba(255, 154, 154, 0.35); background: rgba(255, 154, 154, 0.1); }
+  .status.error { color: #ffd9d9; border-color: rgba(255, 154, 154, 0.35); background: #3b214d; }
   .status.error::before { background: var(--danger); }
 
   /* Colour picker */
