@@ -1,0 +1,252 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>CT Open Decks · Upcoming Events</title>
+<meta name="description" content="Upcoming CT Open Decks shows and sign-ups.">
+<meta name="theme-color" content="#2e045c">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='16' r='15' fill='%232e045c'/%3E%3Ccircle cx='16' cy='16' r='10' fill='none' stroke='%238fa3e0' stroke-width='2'/%3E%3Ccircle cx='16' cy='16' r='3' fill='%23e59ad0'/%3E%3C/svg%3E">
+<link rel="preload" href="CT-Open-Decks.ttf" as="font" type="font/ttf" crossorigin>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  @font-face {
+    font-family: 'CT Open Decks';
+    src: url('CT-Open-Decks.ttf') format('truetype');
+    font-weight: 700;
+    font-display: swap;
+  }
+
+  :root {
+    /* The darkest purple in background.jpg, shown while it loads. */
+    --bg: #2e045c;
+    /* Boxes are solid, so the background never shows through the text. */
+    --card: #251344;
+    --line: rgba(255, 255, 255, 0.12);
+    --text: #ffffff;
+    --muted: rgba(255, 255, 255, 0.62);
+    --accent: #8fa3e0;
+    --yellow: #ffde00;
+    --ink: #1a1424;
+    --ok: #9be3b8;
+    --font-display: 'CT Open Decks', 'Arial Black', system-ui, sans-serif;
+    --font-body: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; }
+  [hidden] { display: none !important; }
+  /* Grows a little on wide screens, like the sign-up page. */
+  html { -webkit-text-size-adjust: 100%; font-size: clamp(100%, calc(39% + 0.89vw), 140%); }
+  body {
+    margin: 0;
+    min-height: 100vh;
+    font: 400 1rem/1.5 var(--font-body);
+    color: var(--text);
+    background: var(--bg);
+    -webkit-font-smoothing: antialiased;
+  }
+  /* The background picture, fixed behind the page. */
+  body::before {
+    content: ''; position: fixed; z-index: -1; top: 0; left: 0; width: 100%; height: 100vh; height: 100lvh;
+    background: var(--bg) url('background.jpg') center / cover no-repeat;
+  }
+  /* Embedded on another site (events?embedded): no background or heading of its own. */
+  .embedded body { min-height: 0; background: transparent; }
+  .embedded body::before, .embedded header { display: none; }
+  .embedded .wrap { padding: 0.5rem; }
+
+  .wrap { max-width: 68rem; margin: 0 auto; padding: 2.5rem 1rem 4rem; }
+  header { text-align: center; }
+  .logo { display: block; width: auto; max-width: min(100%, 15rem); max-height: 8rem; margin: 0 auto 1.25rem; }
+  h1 { margin: 0; font: 700 clamp(1.75rem, 6vw, 2.75rem)/1.1 var(--font-display); }
+  /* Sign-ups open or closed, above the dates. */
+  .banner {
+    display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 0.75rem 1.25rem;
+    margin: 2rem auto 0; padding: 1rem 1.25rem; border-radius: 1rem; border: 1px solid var(--line); background: var(--card);
+    text-align: center;
+  }
+  .banner.open { border-color: rgba(155, 227, 184, 0.55); }
+  .banner h2 { margin: 0; font: 700 1.25rem/1.2 var(--font-display); }
+  .banner.open h2 { color: var(--ok); }
+  .banner p { margin: 0.25rem auto 0; max-width: 46ch; color: var(--muted); font-size: 0.9375rem; }
+  .embedded .banner { margin-top: 0; }
+
+  /* One column on phones, two on tablets, three on desktops. */
+  .shows { display: grid; grid-template-columns: repeat(auto-fill, minmax(18rem, 1fr)); gap: 1rem; margin: 2rem 0 0; padding: 0; list-style: none; }
+  .show {
+    display: flex; gap: 1rem; align-items: center; padding: 1.25rem;
+    border-radius: 1rem; border: 1px solid var(--line); background: var(--card);
+  }
+  .text { min-width: 0; }
+  /* The date as a calendar tile. */
+  .day {
+    flex: none; display: grid; place-items: center; width: 4.25rem; height: 4.25rem; border-radius: 0.875rem;
+    background: var(--yellow); color: var(--ink); text-align: center;
+  }
+  .day b { display: block; font: 700 0.8125rem/1 var(--font-body); letter-spacing: 0.12em; text-transform: uppercase; }
+  .day span { display: block; margin-top: 0.125rem; font: 700 1.875rem/1 var(--font-display); }
+  .session { margin: 0; font: 700 1.375rem/1.15 var(--font-display); }
+  .when { margin: 0.25rem 0 0; color: rgba(255, 255, 255, 0.86); font-weight: 500; }
+  .when .short { display: none; }
+  .when .long { white-space: nowrap; }
+  /* Its own line on bigger screens, after the date on phones. */
+  .when .time { display: block; color: var(--muted); font-size: 0.875rem; }
+  .where { margin: 0.375rem 0 0; color: var(--muted); font-size: 0.875rem; }
+
+  /* Phones: compact rows, so the list doesn't take over the screen. */
+  @media (max-width: 560px) {
+    .wrap { padding: 1.25rem 0.75rem 2rem; }
+    .logo { max-height: 5rem; margin-bottom: 0.75rem; }
+    h1 { font-size: 1.5rem; }
+    .banner { margin-top: 1rem; padding: 0.75rem 1rem; }
+    .banner h2 { font-size: 1.0625rem; }
+    .banner p { font-size: 0.8125rem; }
+    .shows { gap: 0.5rem; margin-top: 0.75rem; }
+    .show { gap: 0.75rem; padding: 0.625rem 0.875rem; border-radius: 0.75rem; }
+    .day { width: 3rem; height: 3rem; border-radius: 0.625rem; }
+    .day b { font-size: 0.625rem; }
+    .day span { font-size: 1.25rem; }
+    .session { font-size: 1rem; }
+    .when { margin-top: 0.125rem; font-size: 0.875rem; }
+    .when .long { display: none; }
+    .when .short { display: inline; }
+    .when .time { display: inline; color: inherit; font-size: inherit; white-space: nowrap; }
+    .when .time::before { content: ' · '; }
+    .where { margin-top: 0.125rem; font-size: 0.75rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .embedded .wrap { padding: 0.25rem; }
+  }
+  .message { margin: 2rem auto 0; max-width: 30rem; padding: 1.5rem; border-radius: 1rem; background: var(--card); text-align: center; color: var(--muted); }
+  .skeleton { min-height: 7rem; }
+  @media (max-width: 560px) { .skeleton { min-height: 4.25rem; } }
+</style>
+<script>
+  if (new URLSearchParams(location.search).has('embedded')) document.documentElement.classList.add('embedded');
+</script>
+</head>
+<body>
+<main class="wrap">
+  <header>
+    <img class="logo" src="logo.png" alt="CT Open Decks">
+    <h1>Upcoming events</h1>
+  </header>
+  <!-- Whether sign-ups are open right now, filled in from the sheet. -->
+  <div class="banner" id="banner" role="status" hidden></div>
+  <ul class="shows" id="shows" aria-live="polite" aria-busy="true">
+    <li class="show skeleton"></li><li class="show skeleton"></li><li class="show skeleton"></li>
+  </ul>
+  <p class="message" id="message" hidden></p>
+</main>
+
+<script>
+const CONFIG = {
+  // The same Apps Script web app URL as index.html (it ends in /exec).
+  apiUrl: 'https://script.google.com/macros/s/AKfycbwZntnJesyS-5fPQT9PHJyThZiSTxXhL__geIVGaDWVkGVpOe7ROJcwM9jBscPxTZfdYQ/exec',
+  // Shown on every show.
+  venue: 'Stella Blues · 204 Crown St, New Haven · 21+',
+  // How often it checks for changes while open, in minutes.
+  refreshMinutes: 5,
+};
+
+const $ = (id) => document.getElementById(id);
+const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+function el(tag, className, text) {
+  const node = document.createElement(tag);
+  if (className) node.className = className;
+  if (text != null) node.textContent = text;
+  return node;
+}
+
+// '2026-12-09' → ['Dec', 9]
+function monthDay(day) {
+  const [, month, date] = day.split('-').map(Number);
+  return [MONTHS[month - 1], date];
+}
+
+// "8:00 PM" → "8 PM"
+const shortTime = (time) => time.replace(':00', '');
+
+const MONTH_NAMES = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August',
+  'September', 'October', 'November', 'December'];
+
+// '2026-12-09' → "December 9th", as the sign-up page writes it.
+function showDay(day) {
+  const [, month, date] = day.split('-').map(Number);
+  const suffix = date >= 11 && date <= 13 ? 'th' : ['th', 'st', 'nd', 'rd'][date % 10] || 'th';
+  return `${MONTH_NAMES[month - 1]} ${date}${suffix}`;
+}
+
+// The message at the top, worded like the sign-up page: open (with slots left), all slots filled (next month opens in person at the show first), or closed.
+function renderBanner(next) {
+  const banner = $('banner');
+  banner.hidden = !next;
+  if (!next) return;
+  const open = next.signups === 'open';
+  banner.className = open ? 'banner open' : 'banner';
+  const text = el('div');
+  if (open) {
+    const [month, date] = monthDay(next.day);
+    text.append(el('h2', '', 'Sign-ups are open'), el('p', '', `${next.openSlots} of ${next.total} slots left for ${month} ${date}`));
+  } else if (next.signups === 'full') {
+    text.append(
+      el('h2', '', 'All slots filled.'),
+      el('p', '', `Sign-ups for next month will be available in-person at the next event on ${showDay(next.day)} before opening online. Online sign-ups open at 5am the next day.`),
+    );
+  } else {
+    text.append(el('h2', '', 'Sign-ups are closed'), el('p', '', 'Check back soon for the next one.'));
+  }
+  banner.replaceChildren(text);
+}
+
+function render(data) {
+  $('message').hidden = true;
+  const list = $('shows');
+  list.removeAttribute('aria-busy');
+  renderBanner(data.shows[0]);
+  if (!data.shows.length) {
+    list.replaceChildren();
+    $('message').textContent = 'New dates coming soon.';
+    $('message').hidden = false;
+    return;
+  }
+  list.replaceChildren(...data.shows.map((show, i) => {
+    const item = el('li', 'show');
+    const [month, date] = monthDay(show.day);
+    const day = el('div', 'day');
+    day.setAttribute('aria-hidden', 'true');
+    day.append(el('b', '', month), el('span', '', String(date)));
+    const text = el('div', 'text');
+    // The long date on bigger screens, "Wed, Dec 9" on phones.
+    const when = el('p', 'when');
+    when.append(el('span', 'long', show.date), el('span', 'short', `${show.date.slice(0, 3)}, ${month} ${date}`));
+    if (show.start) when.append(el('span', 'time', shortTime(show.start)));
+    text.append(el('h2', 'session', show.session ? `Session ${show.session}` : data.name), when, el('p', 'where', CONFIG.venue));
+    item.append(day, text);
+    return item;
+  }));
+}
+
+async function load() {
+  try {
+    const res = await fetch(`${CONFIG.apiUrl}?mode=events`, { cache: 'no-store' });
+    const data = await res.json();
+    if (!data.ok) throw new Error(data.message);
+    render(data);
+  } catch (err) {
+    console.error(err);
+    // A failed check keeps what's on screen.
+    if ($('shows').getAttribute('aria-busy')) {
+      $('shows').replaceChildren();
+      $('message').textContent = "Couldn't load the dates. Try again in a minute.";
+      $('message').hidden = false;
+    }
+  }
+}
+
+load();
+setInterval(() => { if (document.visibilityState === 'visible') load(); }, CONFIG.refreshMinutes * 60000);
+</script>
+</body>
+</html>
