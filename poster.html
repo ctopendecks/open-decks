@@ -168,6 +168,29 @@
   .embedded .wrap { padding: 0 0 1rem; }
   .embedded header .eyebrow, .embedded header h1, .embedded header .date { display: none; }
   .embedded .status { margin-top: 0; }
+  .saved { margin: 0.75rem 0 0; min-height: 1.3em; font-size: 0.875rem; color: var(--muted); }
+  .saved:empty { display: none; }
+  .saved.ok { color: var(--ok); }
+  .saved.error { color: #ffd9d9; }
+
+  /* On the website (poster?live): just the IG post, filling the frame, kept up to date. The frame
+     is 4:5 like the post, so it fits exactly. */
+  .live, .live body { height: 100%; }
+  .live body { min-height: 0; overflow: hidden; background: transparent; }
+  .live body::before { display: none; }
+  .live .wrap { position: relative; max-width: none; height: 100%; padding: 0; }
+  .live header { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; padding: 1rem; }
+  .live header .eyebrow, .live header h1, .live header .date { display: none; }
+  .live .status {
+    flex-direction: column; gap: 0.75rem; margin: 0; padding: 1.25rem 1.5rem; border-radius: 1rem;
+    border-color: #ffde00; font-size: 1.125rem; text-align: center;
+  }
+  .live .status::before { display: none; }
+  .live .status .jog { width: 2.75rem; height: 2.75rem; }
+  .live .status.drawn { display: none; }
+  .live .colors, .live .all, .live .poster .meta, .live .poster .note { display: none; }
+  .live .posters { display: block; max-width: none; margin: 0; }
+  .live .poster canvas { border-radius: 0; box-shadow: none; background: transparent; }
   /* A spinning purple jog wheel, like a CDJ's, shown whenever something is loading. */
   .jog {
     position: relative; display: inline-block; flex: none; width: 2rem; height: 2rem; border-radius: 50%;
@@ -192,6 +215,7 @@
 </style>
 <script>
   if (new URLSearchParams(location.search).has('embedded')) document.documentElement.classList.add('embedded');
+  if (new URLSearchParams(location.search).has('live')) document.documentElement.classList.add('live');
 </script>
 </head>
 <body>
@@ -212,6 +236,7 @@
       <input type="range" id="hue" min="0" max="359" step="1" value="0">
       <button type="button" class="link" id="auto" disabled>Use this month's</button>
     </div>
+    <p class="saved" id="saved" role="status"></p>
   </section>
 
   <ul class="posters" id="posters"></ul>
@@ -233,7 +258,15 @@ const WORDING = {
   remove: 'FEEL FREE TO REMOVE THIS POSTER',
   // An open slot, before the lineup is full.
   open: 'TBA',
+  // The same, on the website's poster.
+  openLive: 'OPEN SLOT',
 };
+
+// poster?live is the website's poster: only the IG post, checked for new sign-ups every minute.
+// poster?embedded is the admin page's Posters screen, where the color picked is saved for the website.
+const LIVE = document.documentElement.classList.contains('live');
+const IN_ADMIN = document.documentElement.classList.contains('embedded');
+const REFRESH_SECONDS = 60;
 
 // Background colours, as how far to turn the hue from the blue the background files are in
 // (like the Hue slider in Photoshop's Hue/Saturation, which keeps lightness and saturation).
@@ -297,7 +330,7 @@ const POSTERS = {
     margin: 100, gap: 90,
   },
 };
-const ORDER = ['story', 'post', 'print'];
+const ORDER = LIVE ? ['post'] : ['story', 'post', 'print'];
 
 const YELLOW = '#ffde00';
 const WHITE = '#ffffff';
@@ -342,7 +375,7 @@ function loadImage(src) {
 
 async function loadArt() {
   const files = new Set();
-  for (const p of Object.values(POSTERS)) {
+  for (const p of ORDER.map((kind) => POSTERS[kind])) {
     files.add(p.background);
     files.add(p.logo.src);
     if (p.qr) files.add(p.qr.src).add(p.qr.background);
@@ -489,7 +522,8 @@ function toneOf(img, m) {
 function matchTones(art) {
   const ref = toneOf(art[POSTERS[MATCH_TO].background]);
   const match = {};
-  for (const [kind, p] of Object.entries(POSTERS)) {
+  for (const kind of ORDER) {
+    const p = POSTERS[kind];
     // Measured again after each try and corrected by what's left over, since the darkest and
     // greyest pixels can't move as far as the rest.
     const m = { hue: 0, saturation: 0, lightness: 0 };
@@ -638,7 +672,7 @@ function drawPoster(ctx, kind, show, art, shift, scale, keepPixels) {
   for (let r = 0; r < rows; r++) {
     const texts = columns.map((c) => {
       if (r >= c.djs.length) return null;
-      return c.djs[r] ? { text: c.djs[r] } : { text: WORDING.open, look: dim };
+      return c.djs[r] ? { text: c.djs[r] } : { text: LIVE ? WORDING.openLive : WORDING.open, look: dim };
     });
     drawRow(pen, p, texts, centers, p.names.y + r * size * LEADING, size, white);
   }
@@ -682,7 +716,7 @@ function buildPage() {
   const list = $('posters');
   for (const kind of ORDER) {
     const p = POSTERS[kind];
-    const scale = Math.min(1, PREVIEW_WIDTH / p.width);
+    const scale = LIVE ? 1 : Math.min(1, PREVIEW_WIDTH / p.width);
     const li = document.createElement('li');
     li.className = 'poster';
     li.innerHTML = `
@@ -728,7 +762,29 @@ function pickColor(shift) {
   } catch {}
   showColor();
   redraw();
+  if (IN_ADMIN) saveColorSoon();
 }
+
+// In the admin page, the color picked is saved for the website's poster once you stop changing it.
+// The admin page sends it to the sheet with its password (see "Posters" in admin.html), and says
+// how it went. This month's own color is saved as a blank, so it keeps changing every month.
+let saveTimer = 0;
+function saveColorSoon() {
+  clearTimeout(saveTimer);
+  $('saved').className = 'saved';
+  $('saved').textContent = '';
+  saveTimer = setTimeout(() => {
+    $('saved').textContent = 'Saving for the website…';
+    parent.postMessage({ ctodPosterColor: state.shift === state.autoShift ? '' : state.shift }, location.origin);
+  }, 700);
+}
+addEventListener('message', (e) => {
+  if (e.source !== parent || !e.data || !('ctodPosterColorSaved' in e.data)) return;
+  $('saved').className = `saved ${e.data.ctodPosterColorSaved ? 'ok' : 'error'}`;
+  $('saved').textContent = e.data.ctodPosterColorSaved
+    ? 'Saved. The poster on the website is this color now.'
+    : e.data.message || 'Couldn’t save it for the website. Try again.';
+});
 
 function colorKey() {
   return `poster-color-${state.show ? state.show.event.session : ''}`;
@@ -856,9 +912,11 @@ async function start() {
     state.art = art;
   } catch (err) {
     console.error(err);
-    setStatus('Couldn’t load the lineup. Check your connection and refresh the page.', 'error');
+    setStatus(LIVE ? 'Couldn’t load the lineup. Try refreshing the page.'
+      : 'Couldn’t load the lineup. Check your connection and refresh the page.', 'error');
     return;
   }
+  if (LIVE) return startLive();
 
   const { event, slots } = state.show;
   $('title').textContent = event.session ? `Session ${event.session}` : event.name;
@@ -872,15 +930,59 @@ async function start() {
   state.autoShift = auto.shift;
   $('colors-hint').textContent = `This month's color is ${auto.name}. Each session gets the next color in the list, ` +
     `so it's always one you haven't used in a while. Pick another if you like.`;
+  $('colors-hint').textContent += IN_ADMIN ? ' The poster on the website uses the color you pick here.'
+    : ' To change the color of the poster on the website, pick it in Admin → Posters.';
+  // The color picked in Admin → Posters comes first, then one picked on this device.
   let saved = null;
   try {
     saved = localStorage.getItem(colorKey());
   } catch {}
-  state.shift = saved !== null && saved !== '' && !isNaN(saved) ? Number(saved) : state.autoShift;
+  state.shift = typeof state.show.color === 'number' ? state.show.color
+    : saved !== null && saved !== '' && !isNaN(saved) ? Number(saved) : state.autoShift;
   showColor();
   redraw();
   for (const kind of ORDER) state.previews[kind].button.disabled = false;
   $('download-all').disabled = false;
+}
+
+// The website's poster: this month's color (or the one picked in Admin → Posters), redrawn
+// whenever the lineup changes. It checks every minute while it's on screen, and straight away
+// when you come back to the page.
+function startLive() {
+  let drawn = '';
+  const draw = () => {
+    const show = state.show;
+    const shift = typeof show.color === 'number' ? show.color
+      : (show.event.session ? COLOR_FOR_SESSION(show.event.session) : COLORS[0]).shift;
+    const key = JSON.stringify([show, shift]);
+    if (key === drawn) return;
+    drawn = key;
+    state.shift = shift;
+    const { canvas } = state.previews.post;
+    drawPoster(canvas.getContext('2d'), 'post', show, state.art, shift, 1, true);
+    const djs = show.slots.map((s) => `${startTime(s.time)} ${s.room}: ${s.dj || 'open slot'}`).join(', ');
+    canvas.setAttribute('aria-label',
+      `Poster for ${show.event.session ? 'Session ' + show.event.session : show.event.name}, ${show.event.date}. ${djs}.`);
+    setStatus('', 'drawn');
+  };
+  draw();
+  let checked = Date.now();
+  const check = async () => {
+    checked = Date.now();
+    try {
+      state.show = await loadShow();
+      draw();
+    } catch (err) {
+      // Keeps showing the last lineup it had, and tries again next time.
+      console.error(err);
+    }
+  };
+  setInterval(() => {
+    if (document.visibilityState === 'visible' && Date.now() - checked >= REFRESH_SECONDS * 1000) check();
+  }, 5000);
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible' && Date.now() - checked >= 10000) check();
+  });
 }
 
 start();

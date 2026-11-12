@@ -1,0 +1,255 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<!-- Tells the Dark Reader browser extension to leave the colors alone; the page is already dark. -->
+<meta name="darkreader-lock">
+<title>CT Open Decks · Mailing list</title>
+<meta name="description" content="Get an email when CT Open Decks sign-ups open.">
+<meta name="theme-color" content="#2e045c">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='16' r='15' fill='%232e045c'/%3E%3Ccircle cx='16' cy='16' r='10' fill='none' stroke='%238fa3e0' stroke-width='2'/%3E%3Ccircle cx='16' cy='16' r='3' fill='%23e59ad0'/%3E%3C/svg%3E">
+<link rel="preload" href="CT-Open-Decks.ttf" as="font" type="font/ttf" crossorigin>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Space+Grotesk:wght@600&display=swap" rel="stylesheet">
+<style>
+  @font-face {
+    font-family: 'CT Open Decks';
+    src: url('CT-Open-Decks.ttf') format('truetype');
+    font-weight: 700;
+    font-display: swap;
+  }
+
+  :root {
+    /* The darkest purple in background.jpg, shown while it loads. */
+    --bg: #2e045c;
+    /* Boxes are solid, so the background never shows through the text. */
+    --card: #251344;
+    --field: #33214f;
+    --line: rgba(255, 255, 255, 0.12);
+    --text: #ffffff;
+    --ink: #1a1424;
+    --yellow: #ffde00;
+    --lilac: #c4adff;
+    --ok: #9be3b8;
+    --danger: #ffb3b3;
+    --font-display: 'CT Open Decks', 'Arial Black', system-ui, sans-serif;
+    --font-body: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; }
+  [hidden] { display: none !important; }
+  /* The same size as the sign-ups box; everything in the widget is sized from this. */
+  html { -webkit-text-size-adjust: 100%; font-size: clamp(130%, calc(50.7% + 1.157vw), 182%); }
+  body {
+    margin: 0;
+    min-height: 100vh;
+    font: 400 1rem/1.5 var(--font-body);
+    color: var(--text);
+    background: var(--bg);
+    -webkit-font-smoothing: antialiased;
+  }
+  /* The background picture, fixed behind the page. */
+  body::before {
+    content: ''; position: fixed; z-index: -1; top: 0; left: 0; width: 100%; height: 100vh; height: 100lvh;
+    background: var(--bg) url('background.jpg') center / cover no-repeat;
+  }
+  /* Embedded on another site (mailing-list?embedded): no background or logo of its own. */
+  .embedded body { min-height: 0; background: transparent; }
+  .embedded body::before, .embedded .logo { display: none; }
+
+  .wrap { max-width: 40rem; margin: 0 auto; padding: 2.5rem 1rem 4rem; }
+  /* Embedded, the box sits in the middle of the embed, whatever height you give it. */
+  .embedded, .embedded body { height: 100%; }
+  .embedded .wrap { min-height: 100%; padding: 0.25rem; display: flex; flex-direction: column; justify-content: center; }
+  .logo { display: block; width: auto; max-width: min(100%, 15rem); max-height: 8rem; margin: 0 auto 1.25rem; }
+
+  .box {
+    padding: 1rem 1.25rem; border-radius: 1rem; border: 1px solid var(--yellow); background: var(--card);
+    text-align: center;
+  }
+  .box h2 { margin: 0; font: 700 1.25rem/1.2 var(--font-display); }
+  .box.done h2 { color: var(--ok); }
+  /* The message in your website's own text style (Space Grotesk), so it reads as part of the page. */
+  .box p { margin: 0.25rem auto 0; max-width: 46ch; color: #fafafa; font: 600 0.9375rem/1.6 'Space Grotesk', var(--font-body); }
+  .row { display: flex; flex-wrap: wrap; justify-content: center; gap: 0.5rem; margin: 0.875rem auto 0; max-width: 30rem; }
+  .email {
+    flex: 1 1 11rem; min-width: 0; padding: 0.6875rem 1rem; border-radius: 62.4375rem;
+    border: 1px solid var(--line); background: var(--field); color: var(--text);
+    font: 500 0.9375rem/1.2 var(--font-body);
+  }
+  .email::placeholder { color: rgba(255, 255, 255, 0.55); }
+  .email:focus { outline: 0.125rem solid var(--lilac); outline-offset: 0.0625rem; }
+  .email[aria-invalid='true'] { border-color: var(--danger); }
+  .btn {
+    flex: none; padding: 0.75rem 2rem; border: 0; border-radius: 62.4375rem; cursor: pointer;
+    background: var(--lilac); color: var(--ink);
+    font: 600 0.9375rem/1.2 var(--font-body);
+    transition: background-color 0.15s;
+  }
+  .btn:hover { background: #ddd0ff; }
+  .btn:disabled { cursor: progress; opacity: 0.8; }
+  .btn:focus-visible { outline: 0.125rem solid #fff; outline-offset: 0.1875rem; }
+  .box .error { color: var(--danger); font-size: 0.875rem; }
+  .box .error:empty { display: none; }
+  /* Only bots fill this in. */
+  .trap { position: absolute; left: -100vw; width: 1px; height: 1px; overflow: hidden; }
+  .nowrap { white-space: nowrap; }
+  .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+  @media (max-width: 560px) {
+    .box { padding: 0.75rem 1rem; }
+    .box h2 { font-size: 1.0625rem; }
+    .box p { font-size: 0.875rem; }
+    .row { margin-top: 0.625rem; }
+    .email { font-size: 0.875rem; padding: 0.625rem 0.875rem; }
+    .btn { padding: 0.625rem 1.75rem; font-size: 0.875rem; }
+  }
+  @media (max-width: 380px) {
+    /* The button goes under the box on a narrow phone. */
+    .row { flex-direction: column; flex-wrap: nowrap; }
+    .email { flex: none; }
+  }
+  /* A spinning purple jog wheel, like a CDJ's, shown whenever something is loading. */
+  .jog {
+    position: relative; display: inline-block; flex: none; width: 2rem; height: 2rem; border-radius: 50%;
+    vertical-align: middle; box-shadow: 0 0.125rem 0.375rem rgba(0, 0, 0, 0.5);
+  }
+  .jog::before {
+    content: ''; position: absolute; inset: 0; border-radius: 50%;
+    background: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><defs><radialGradient id='r'><stop offset='.72' stop-color='%23341470'/><stop offset='.88' stop-color='%23240b52'/><stop offset='1' stop-color='%23100426'/></radialGradient><radialGradient id='b' cx='.38' cy='.32' r='.75'><stop offset='0' stop-color='%23b291ff'/><stop offset='.45' stop-color='%235f2fb8'/><stop offset='1' stop-color='%231a0740'/></radialGradient><radialGradient id='p' cx='.42' cy='.36' r='.7'><stop offset='0' stop-color='%23441c88'/><stop offset='.7' stop-color='%23260c56'/><stop offset='1' stop-color='%23170636'/></radialGradient><radialGradient id='h' cx='.4' cy='.35' r='.7'><stop offset='0' stop-color='%23552aa6'/><stop offset='1' stop-color='%23240b52'/></radialGradient></defs><circle cx='50' cy='50' r='49.5' fill='url(%23r)'/><circle cx='50.00' cy='7.40' r='4.7' fill='url(%23b)'/><circle cx='61.03' cy='8.85' r='4.7' fill='url(%23b)'/><circle cx='71.30' cy='13.11' r='4.7' fill='url(%23b)'/><circle cx='80.12' cy='19.88' r='4.7' fill='url(%23b)'/><circle cx='86.89' cy='28.70' r='4.7' fill='url(%23b)'/><circle cx='91.15' cy='38.97' r='4.7' fill='url(%23b)'/><circle cx='92.60' cy='50.00' r='4.7' fill='url(%23b)'/><circle cx='91.15' cy='61.03' r='4.7' fill='url(%23b)'/><circle cx='86.89' cy='71.30' r='4.7' fill='url(%23b)'/><circle cx='80.12' cy='80.12' r='4.7' fill='url(%23b)'/><circle cx='71.30' cy='86.89' r='4.7' fill='url(%23b)'/><circle cx='61.03' cy='91.15' r='4.7' fill='url(%23b)'/><circle cx='50.00' cy='92.60' r='4.7' fill='url(%23b)'/><circle cx='38.97' cy='91.15' r='4.7' fill='url(%23b)'/><circle cx='28.70' cy='86.89' r='4.7' fill='url(%23b)'/><circle cx='19.88' cy='80.12' r='4.7' fill='url(%23b)'/><circle cx='13.11' cy='71.30' r='4.7' fill='url(%23b)'/><circle cx='8.85' cy='61.03' r='4.7' fill='url(%23b)'/><circle cx='7.40' cy='50.00' r='4.7' fill='url(%23b)'/><circle cx='8.85' cy='38.97' r='4.7' fill='url(%23b)'/><circle cx='13.11' cy='28.70' r='4.7' fill='url(%23b)'/><circle cx='19.88' cy='19.88' r='4.7' fill='url(%23b)'/><circle cx='28.70' cy='13.11' r='4.7' fill='url(%23b)'/><circle cx='38.97' cy='8.85' r='4.7' fill='url(%23b)'/><circle cx='50' cy='50' r='37' fill='%230e0322'/><circle cx='50' cy='50' r='35.6' fill='url(%23p)'/><circle cx='50' cy='50' r='15' fill='url(%23h)' stroke='%230e0322' stroke-width='1.5'/><circle cx='50' cy='50' r='15.8' fill='none' stroke='%239a74ef' stroke-opacity='.55' stroke-width='.8'/><rect x='48.8' y='17' width='2.4' height='8' rx='1.2' fill='%23c4adff'/></svg>") center / 100% 100% no-repeat;
+    animation: jog-spin 1.6s linear infinite;
+  }
+  /* The shine stays put while the wheel turns under it. */
+  .jog::after {
+    content: ''; position: absolute; inset: 0; border-radius: 50%;
+    background:
+      radial-gradient(circle at 34% 26%, rgba(255, 255, 255, 0.3), rgba(255, 255, 255, 0) 42%),
+      radial-gradient(circle at 70% 80%, rgba(0, 0, 0, 0.3), rgba(0, 0, 0, 0) 55%);
+  }
+  @keyframes jog-spin { to { transform: rotate(1turn); } }
+  @media (prefers-reduced-motion: reduce) { .jog::before { animation-duration: 6s; } }
+  /* Smaller, inside a button. */
+  button .jog { width: 1.25rem; height: 1.25rem; margin: 0 0.5rem 0 0; vertical-align: -0.25em; }
+</style>
+<script>
+  if (new URLSearchParams(location.search).has('embedded')) document.documentElement.classList.add('embedded');
+</script>
+</head>
+<body>
+<main class="wrap">
+  <img class="logo" src="logo.png" alt="CT Open Decks">
+  <div class="box" id="box" aria-live="polite">
+    <form id="form" novalidate>
+      <h2>Get an email when <span class="nowrap">sign-ups open</span></h2>
+      <p>Join the mailing list and we'll let you know as soon as online sign-ups open, and when they fill up.</p>
+      <div class="row">
+        <label class="sr" for="email">Your email</label>
+        <input class="email" id="email" name="email" type="email" inputmode="email" autocomplete="email" autocapitalize="none" spellcheck="false" maxlength="254" placeholder="Your email" enterkeyhint="send">
+        <button class="btn" id="join" type="submit">Join</button>
+      </div>
+      <div class="trap" aria-hidden="true"><label>Website <input id="website" name="website" tabindex="-1" autocomplete="off"></label></div>
+      <p class="error" id="error" role="alert"></p>
+    </form>
+    <div id="done" hidden>
+      <h2>You're on the list!</h2>
+      <p>We'll email you when sign-ups open, and when they're full.</p>
+    </div>
+  </div>
+</main>
+
+<script>
+const CONFIG = {
+  // The same Apps Script web app URL as index.html (it ends in /exec).
+  apiUrl: 'https://script.google.com/macros/s/AKfycbwZntnJesyS-5fPQT9PHJyThZiSTxXhL__geIVGaDWVkGVpOe7ROJcwM9jBscPxTZfdYQ/exec',
+};
+
+const $ = (id) => document.getElementById(id);
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+// Shows the spinning jog wheel in front of a "…ing" label while something loads.
+function showLoading(node, text) {
+  const jog = document.createElement('span');
+  jog.className = 'jog';
+  jog.setAttribute('aria-hidden', 'true');
+  node.replaceChildren(jog, text);
+}
+
+function showError(text) {
+  $('error').textContent = text;
+  $('email').setAttribute('aria-invalid', String(Boolean(text)));
+  fit();
+}
+
+// Sent as text/plain so the browser doesn't need a CORS preflight, which Apps Script can't answer.
+async function join(email) {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 20000);
+  try {
+    const res = await fetch(CONFIG.apiUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify({ action: 'subscribe', email, website: $('website').value }),
+      cache: 'no-store',
+      signal: controller.signal,
+    });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    return await res.json();
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+$('form').addEventListener('submit', async (event) => {
+  event.preventDefault();
+  const button = $('join');
+  if (button.disabled) return;
+  const email = $('email').value.trim();
+  if (!EMAIL_RE.test(email)) {
+    showError(email ? "That email address doesn't look right." : 'Enter your email.');
+    $('email').focus();
+    return;
+  }
+  showError('');
+  button.disabled = true;
+  showLoading(button, 'Joining…');
+  let data;
+  try {
+    data = await join(email);
+  } catch (err) {
+    console.error(err);
+    data = { ok: false, message: "Couldn't reach the mailing list. Check your connection and try again." };
+  }
+  button.disabled = false;
+  button.textContent = 'Join';
+  if (!data.ok) return showError(data.message || 'Something went wrong. Try again.');
+  $('form').hidden = true;
+  $('done').hidden = false;
+  $('box').classList.add('done');
+  fit();
+});
+$('email').addEventListener('input', () => { if ($('error').textContent) showError(''); });
+
+// Embedded: tells the page around it how tall the box wants to be, and if the embed is shorter
+// than that (a narrow phone, or bigger text settings), shrinks everything until it fits, so the
+// bottom is never cut off.
+function fit() {
+  const root = document.documentElement;
+  if (!root.classList.contains('embedded')) return;
+  const box = $('box');
+  const needed = () => Math.ceil(box.getBoundingClientRect().height) + 8;
+  root.style.fontSize = '';
+  if (window.parent !== window) window.parent.postMessage({ ctodMailingHeight: needed() }, '*');
+  let size = parseFloat(getComputedStyle(root).fontSize);
+  while (needed() > innerHeight && size > 10) {
+    size *= 0.95;
+    root.style.fontSize = `${size}px`;
+  }
+}
+addEventListener('resize', fit);
+// The text gets a little taller once the fonts arrive.
+document.fonts.ready.then(fit);
+fit();
+</script>
+</body>
+</html>

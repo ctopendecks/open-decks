@@ -404,6 +404,16 @@
       </fieldset>
 
       <fieldset class="card">
+        <legend>Mailing list</legend>
+        <label class="check"><input type="checkbox" id="s-emailList"><span><b>Email the mailing list when sign-ups open and when they're full</b>To everyone who joined from the box on your website, once each per show, within about 10 minutes.</span></label>
+        <div class="field">
+          <label for="s-mailingLink">Sign-up link in that email</label>
+          <input id="s-mailingLink" class="text" inputmode="url" maxlength="300" autocomplete="off" autocapitalize="none" spellcheck="false">
+          <p class="hint" id="mailing-count">Everyone on it is in the Mailing list tab of the sheet.</p>
+        </div>
+      </fieldset>
+
+      <fieldset class="card">
         <legend>Reminder</legend>
         <label class="check"><input type="checkbox" id="s-remind"><span><b>Send the reminder</b>Goes to everyone on the lineup around noon, 3 days before the show.</span></label>
         <div class="field">
@@ -826,14 +836,17 @@ editor.addEventListener('cancel', (event) => {
 // ---- Settings ---------------------------------------------------------------
 
 // The Settings form's boxes and tick boxes, by the name the sheet's data uses.
-const TEXT_SETTINGS = ['eventName', 'session', 'eventDay', 'posterPage', 'reminderSubject', 'reminderMessage'];
-const TICK_SETTINGS = ['open', 'oneSlotPerEmail', 'emailOwner', 'confirm', 'cancelByReply', 'emailFull', 'remind'];
+const TEXT_SETTINGS = ['eventName', 'session', 'eventDay', 'posterPage', 'mailingLink', 'reminderSubject', 'reminderMessage'];
+const TICK_SETTINGS = ['open', 'oneSlotPerEmail', 'emailOwner', 'confirm', 'cancelByReply', 'emailFull', 'emailList', 'remind'];
 
 function showSettings() {
   const { settings } = state.data;
   for (const name of TEXT_SETTINGS) $(`s-${name}`).value = settings[name] == null ? '' : settings[name];
   for (const name of TICK_SETTINGS) $(`s-${name}`).checked = Boolean(settings[name]);
   $('s-adminPassword').value = '';
+  const people = state.data.mailingList || 0;
+  $('mailing-count').textContent = `${people} ${people === 1 ? 'person is' : 'people are'} on the list. ` +
+    'You can see them in the Mailing list tab of the sheet.';
 }
 
 function settingsStatus(text, kind = '') {
@@ -906,6 +919,22 @@ $('poster-frame').addEventListener('load', () => {
   const fit = () => { frame.style.height = `${doc.documentElement.scrollHeight}px`; };
   new ResizeObserver(fit).observe(doc.body);
   fit();
+});
+
+// A color picked on the Posters screen is saved to the sheet, for the poster on the website.
+addEventListener('message', async (e) => {
+  const frame = $('poster-frame');
+  if (e.source !== frame.contentWindow || !e.data || !('ctodPosterColor' in e.data)) return;
+  let reply;
+  try {
+    const data = await ask('poster-color', { shift: e.data.ctodPosterColor });
+    if (data.code === 'key') return showLock(data.message);
+    reply = { ctodPosterColorSaved: Boolean(data.ok), message: data.ok ? '' : data.message };
+  } catch (err) {
+    console.error(err);
+    reply = { ctodPosterColorSaved: false, message: 'Couldn’t reach the sign-up sheet. Check your connection and try again.' };
+  }
+  frame.contentWindow.postMessage(reply, location.origin);
 });
 
 // ---- Start ----------------------------------------------------------------

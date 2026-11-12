@@ -83,6 +83,10 @@
     transition: background-color 0.15s;
   }
   .btn:hover { background: #ddd0ff; }
+  button.btn { border: 0; cursor: pointer; font-family: inherit; }
+  /* The first step of your website's Sign Up page (status?embedded&flow): the page's own box is
+     around it, so no box here, and Sign up starts the steps on that page. */
+  .flow .status { border: 0; background: transparent; }
   @media (max-width: 560px) {
     .status { padding: 0.75rem 1rem; }
     .status h2 { font-size: 1.0625rem; }
@@ -113,6 +117,7 @@
 </style>
 <script>
   if (new URLSearchParams(location.search).has('embedded')) document.documentElement.classList.add('embedded');
+  if (new URLSearchParams(location.search).has('flow')) document.documentElement.classList.add('flow');
 </script>
 </head>
 <body>
@@ -138,6 +143,9 @@ const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', '
 const MONTH_NAMES = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August',
   'September', 'October', 'November', 'December'];
 const buttonLink = new URLSearchParams(location.search).has('form') ? CONFIG.signupForm : CONFIG.signupPage;
+// On your website's Sign Up page the button starts the steps there instead of going anywhere.
+const FLOW = document.documentElement.classList.contains('flow');
+const toPage = (message) => { if (window.parent !== window) window.parent.postMessage(message, '*'); };
 
 function el(tag, className, text) {
   const node = document.createElement(tag);
@@ -164,10 +172,17 @@ function render(next) {
   } else if (open) {
     const [, month, date] = next.day.split('-').map(Number);
     const left = `${next.openSlots} of ${next.total} slot${next.total === 1 ? '' : 's'} left for ${MONTHS[month - 1]} ${date}`;
-    const button = el('a', 'btn', 'Sign up');
-    button.href = buttonLink;
-    // Leaves the embed and opens in the whole window.
-    button.target = '_top';
+    let button;
+    if (FLOW) {
+      button = el('button', 'btn', 'Sign up');
+      button.type = 'button';
+      button.addEventListener('click', () => toPage({ ctodSignupStart: true }));
+    } else {
+      button = el('a', 'btn', 'Sign up');
+      button.href = buttonLink;
+      // Leaves the embed and opens in the whole window.
+      button.target = '_top';
+    }
     box.replaceChildren(el('h2', '', 'Sign-ups are open'), el('p', '', left), button);
   } else if (next.signups === 'full') {
     box.replaceChildren(
@@ -186,6 +201,7 @@ async function load() {
     const data = await res.json();
     if (!data.ok) throw new Error(data.message);
     render(data.shows[0]);
+    toPage({ ctodSignupState: data.shows[0] ? data.shows[0].signups : 'closed' });
     loaded = true;
   } catch (err) {
     console.error(err);
