@@ -202,7 +202,8 @@
   /* Shown while the slots load, as wide as a real slot. */
   .loading-card {
     display: flex; align-items: center; justify-content: center; gap: 0.75rem;
-    width: 28.375rem; max-width: 100%; margin: 0; padding: 2rem 1.25rem;
+    /* Never wider than the screen (or the panel it's in), less the page's side padding. */
+    width: 28.375rem; max-width: min(100%, calc(100vw - 2rem)); margin: 0; padding: 2rem 1.25rem;
     border-radius: var(--radius); border: 1px solid var(--line); background: var(--card);
     font-weight: 600; font-size: 1.125rem;
   }
@@ -666,6 +667,13 @@ function showLoading(node, text) {
   node.replaceChildren(jog, text);
 }
 
+// Eases in something that's just appeared after loading, like the sign-up panel opening does.
+function appear(node) {
+  if (!node || matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  node.animate([{ opacity: 0, transform: 'translateY(0.5rem)' }, { opacity: 1, transform: 'none' }],
+    { duration: 320, easing: 'cubic-bezier(0.2, 0.8, 0.2, 1)' });
+}
+
 function renderLoading() {
   const board = el('div', 'board');
   const list = el('div', 'slots');
@@ -689,7 +697,9 @@ function renderGate() {
   $('gate-label').textContent = night ? 'Enter the 4-digit code' : 'If you have a sign-up code, enter it here';
   $('gate-label').classList.toggle('quiet', !night);
   $('slots').replaceChildren();
+  const fresh = $('gate').hidden;
   $('gate').hidden = false;
+  if (fresh) appear($('gate'));
 }
 
 function renderMessage(title, text, retry) {
@@ -701,7 +711,9 @@ function renderMessage(title, text, retry) {
     button.addEventListener('click', () => refresh());
     box.append(button);
   }
+  const fresh = Boolean($('slots').querySelector('.loading-card'));
   $('slots').replaceChildren(box);
+  if (fresh) appear(box);
 }
 
 // "Wednesday, December 9" → "December 9th". Blank when the Settings date isn't a real date.
@@ -819,7 +831,10 @@ function render() {
   }
   const board = el('div', 'board');
   board.append(head, list);
+  // Eased in when it replaces "Loading slots…", not on the quiet re-checks after.
+  const fresh = Boolean($('slots').querySelector('.loading-card'));
   $('slots').replaceChildren(board);
+  if (fresh) appear(board);
 }
 
 function showNotice(text) {

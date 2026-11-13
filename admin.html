@@ -50,6 +50,10 @@
     -webkit-font-smoothing: antialiased;
   }
   body:has(dialog[open]) { overflow: hidden; }
+  /* Pop-ups rise in, like the sign-up form's. */
+  dialog[open] { animation: rise 0.22s ease-out; }
+  @keyframes rise { from { opacity: 0; transform: translateY(0.75rem); } }
+  @media (prefers-reduced-motion: reduce) { dialog[open] { animation: none; } }
   /* The sign-up page's background picture, fixed behind the page. */
   body::before {
     content: ''; position: fixed; z-index: -1; top: 0; left: 0; width: 100%; height: 100vh; height: 100lvh;
@@ -195,6 +199,7 @@
   .settings fieldset { min-width: 0; }
   .settings legend { float: left; width: 100%; margin: 0 0 0.25rem; padding: 0; font: 700 1.125rem/1.2 var(--font-display); }
   .settings legend + * { clear: both; }
+  textarea.text.short { min-height: 9rem; }
   textarea.text { height: auto; min-height: 14rem; padding: 0.75rem 0.875rem; line-height: 1.45; resize: vertical; font: inherit; }
   .hint { margin: 0.375rem 0 0; color: var(--muted); font-size: 0.8125rem; }
   .check { display: flex; gap: 0.75rem; align-items: flex-start; padding: 0.75rem 0; border-bottom: 1px solid var(--line); cursor: pointer; }
@@ -215,6 +220,12 @@
 
   /* Posters: the poster page itself, sized to fit so the whole admin page scrolls as one. */
   .poster-frame { display: block; width: 100%; height: 80vh; margin: 1.25rem 0 0; border: 0; }
+  /* While the admin page or the posters are loading: a jog wheel and what it's doing. */
+  .app-loading {
+    display: flex; align-items: center; justify-content: center; gap: 0.75rem; margin: 2.5rem auto;
+    color: rgba(255, 255, 255, 0.86); font-weight: 600;
+  }
+  .app-loading .jog { width: 2.75rem; height: 2.75rem; }
 
   /* Editing a sign-up */
   dialog {
@@ -227,8 +238,31 @@
   .sheet { padding: 1.5rem 1.25rem 1.25rem; }
   .sheet h2 { margin: 0; font: 700 1.375rem/1.2 var(--font-display); }
   .field { margin-top: 1rem; }
+  .field .btn.small, .card > .btn.small { margin-top: 0.625rem; }
+  .card fieldset.to { margin: 1rem 0 0; padding: 0; border: 0; }
+  .card fieldset.to legend { padding: 0; margin-bottom: 0.25rem; font-size: 0.875rem; font-weight: 600; }
+  .save-bar .btn.ghost { flex: none; }
+  /* Calendar */
+  .cal-list { margin: 1rem 0 0; padding: 0; list-style: none; }
+  .cal-row { padding: 0.875rem 0; border-top: 1px solid var(--line); }
+  .cal-row:first-child { border-top: 0; }
+  .cal-top { display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap; }
+  .cal-when { flex: 1; min-width: 12rem; }
+  .cal-when b { display: block; font: 700 1.0625rem/1.2 var(--font-display); }
+  .cal-when > span { display: block; margin-top: 0.125rem; color: var(--muted); font-size: 0.875rem; }
+  .cal-badge { display: inline-block; margin-left: 0.5rem; padding: 0.125rem 0.5rem; border-radius: 99rem; background: rgba(155, 227, 184, 0.16); color: var(--ok); font: 600 0.6875rem/1.4 var(--font-body); letter-spacing: 0.06em; text-transform: uppercase; vertical-align: 0.15em; }
+  .cal-actions { display: flex; gap: 0.5rem; }
+  .cal-edit { margin-top: 0.75rem; padding: 0.875rem; border-radius: 0.75rem; background: rgba(255, 255, 255, 0.04); }
+  .cal-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr)); gap: 0 0.75rem; }
+  .cal-repeat { display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem; margin-top: 0.5rem; font-size: 0.9375rem; }
+  .cal-repeat select, .cal-repeat input { width: auto; }
+  select.text { padding-right: 2rem; }
+  .cal-preview { margin: 1rem 0 0; color: var(--muted); font-size: 0.875rem; }
+  .cal-preview b { color: var(--text); }
+  .cal-warn { color: #f2c879; }
   .field label { display: flex; justify-content: space-between; margin-bottom: 0.375rem; font-size: 0.875rem; font-weight: 600; }
   .optional { font-weight: 400; color: var(--muted); }
+  .text[readonly] { opacity: 0.65; cursor: default; }
   .handle { position: relative; }
   .handle span { position: absolute; left: 0.875rem; top: 50%; transform: translateY(-50%); color: var(--muted); pointer-events: none; }
   .handle input { padding-left: 2rem; }
@@ -285,6 +319,7 @@
     <p id="lock-error" class="error" role="alert"></p>
   </form>
 
+  <p id="app-loading" class="app-loading" role="status" hidden><span class="jog" aria-hidden="true"></span>Opening admin…</p>
   <div id="app" hidden>
     <a id="back" class="back" href="#" hidden>&larr; Menu</a>
     <p id="app-error" class="error" role="alert"></p>
@@ -302,6 +337,14 @@
         </a></li>
         <li><a class="tile" href="#signups">
           <span><span class="tile-title">Sign-ups</span><span class="tile-sub" id="menu-signups-sub">Change or remove anyone</span></span>
+          <span class="arrow" aria-hidden="true">&rarr;</span>
+        </a></li>
+        <li><a class="tile" href="#calendar">
+          <span><span class="tile-title">Calendar</span><span class="tile-sub" id="menu-calendar-sub">All the show dates: change, take off or add</span></span>
+          <span class="arrow" aria-hidden="true">&rarr;</span>
+        </a></li>
+        <li><a class="tile" href="#email">
+          <span><span class="tile-title">Send an email</span><span class="tile-sub">Write to this month's lineup or the mailing list</span></span>
           <span class="arrow" aria-hidden="true">&rarr;</span>
         </a></li>
         <li><a class="tile" href="#posters">
@@ -379,8 +422,8 @@
         </div>
         <div class="field">
           <label for="s-eventDay">Next show</label>
-          <input id="s-eventDay" class="text" type="date">
-          <p class="hint">Moves to the 2nd Wednesday of the next month by itself at 5 am after each show.</p>
+          <input id="s-eventDay" class="text" type="date" readonly>
+          <p class="hint">Change it, or any other date, on the <a href="#calendar">Calendar</a>. It moves to the next date there by itself at 5 am after each show.</p>
         </div>
       </fieldset>
 
@@ -414,6 +457,38 @@
       </fieldset>
 
       <fieldset class="card">
+        <legend>Email wording</legend>
+        <p class="hint">Words in {curly brackets} are filled in when each email goes out. Empty a box to go back to the original wording.</p>
+        <div class="field">
+          <label for="s-confirmMessage">Confirmation (each DJ gets it when they sign up)</label>
+          <textarea id="s-confirmMessage" class="text short" rows="9"></textarea>
+          <p class="hint">{name}, {performance name}, {time}, {room}, {date}, {event}, {session}, and {how to cancel}. The subject stays "You're on the lineup: …" so replying CANCEL works.</p>
+          <button type="button" class="btn ghost small" data-test="confirm">Email me a test</button>
+        </div>
+        <div class="field">
+          <label for="s-openSubject">Mailing list, when sign-ups open: subject</label>
+          <input id="s-openSubject" class="text" maxlength="200" autocomplete="off">
+        </div>
+        <div class="field">
+          <label for="s-openMessage">Message</label>
+          <textarea id="s-openMessage" class="text short" rows="7"></textarea>
+          <p class="hint">{event name}, {event}, {date}, {session} and {link} (the sign-up link above). An unsubscribe link is always added at the end.</p>
+          <button type="button" class="btn ghost small" data-test="open">Email me a test</button>
+        </div>
+        <div class="field">
+          <label for="s-fullSubject">Mailing list, when the lineup is full: subject</label>
+          <input id="s-fullSubject" class="text" maxlength="200" autocomplete="off">
+        </div>
+        <div class="field">
+          <label for="s-fullMessage">Message</label>
+          <textarea id="s-fullMessage" class="text short" rows="6"></textarea>
+          <p class="hint">The same {words}. An unsubscribe link is always added at the end.</p>
+          <button type="button" class="btn ghost small" data-test="full">Email me a test</button>
+        </div>
+        <p class="hint" id="test-email-note">Tests use the saved wording, so save first if you've changed it.</p>
+      </fieldset>
+
+      <fieldset class="card">
         <legend>Reminder</legend>
         <label class="check"><input type="checkbox" id="s-remind"><span><b>Send the reminder</b>Goes to everyone on the lineup around noon, 3 days before the show.</span></label>
         <div class="field">
@@ -444,7 +519,86 @@
       </div>
     </form>
 
+    <section id="view-calendar" aria-labelledby="calendar-title" hidden>
+      <div class="card">
+        <h2 id="calendar-title">Show dates</h2>
+        <p class="hint" id="cal-hint">The first one is the next show: sign-ups are for it. Session numbers count up from it, so they change when you add or take off a date.</p>
+        <p class="error" id="cal-error" role="alert"></p>
+        <ul class="cal-list" id="cal-list"></ul>
+      </div>
+
+      <form id="cal-add" class="card" novalidate>
+        <h2>Add dates</h2>
+        <div class="cal-grid">
+          <div class="field">
+            <label for="a-start">First date</label>
+            <input id="a-start" class="text" type="date">
+          </div>
+          <div class="field">
+            <label for="a-repeat">Repeat</label>
+            <select id="a-repeat" class="text">
+              <option value="once">Just this date</option>
+              <option value="weekly">Every week, or every few weeks</option>
+              <option value="monthly" selected>Every month, on a weekday (like the 2nd Wednesday)</option>
+            </select>
+          </div>
+        </div>
+        <div class="cal-repeat" id="a-weekly" hidden>
+          Every <select id="a-weeks" class="text"><option>1</option><option>2</option><option>3</option><option>4</option></select>
+          week(s) on <b id="a-weekday-name"></b>
+        </div>
+        <div class="cal-repeat" id="a-monthly">
+          On the <select id="a-nth" class="text"><option value="1">1st</option><option value="2">2nd</option><option value="3">3rd</option><option value="4">4th</option><option value="-1">last</option></select>
+          <select id="a-weekday" class="text"><option value="0">Sunday</option><option value="1">Monday</option><option value="2">Tuesday</option><option value="3">Wednesday</option><option value="4">Thursday</option><option value="5">Friday</option><option value="6">Saturday</option></select>
+          of every <select id="a-months" class="text"><option value="1">month</option><option value="2">2 months</option><option value="3">3 months</option></select>
+        </div>
+        <div class="cal-repeat" id="a-ends">
+          <label><input type="radio" name="ends" value="count" checked> For</label>
+          <input id="a-count" class="text" type="number" min="1" max="60" value="6" style="width: 5rem">
+          <span>dates</span>
+          <label style="margin-left: 0.75rem"><input type="radio" name="ends" value="until"> Until</label>
+          <input id="a-until" class="text" type="date">
+        </div>
+        <div class="cal-grid">
+          <div class="field"><label for="a-venue">Venue</label><input id="a-venue" class="text" maxlength="80" autocomplete="off"></div>
+          <div class="field"><label for="a-city">City</label><input id="a-city" class="text" maxlength="80" autocomplete="off"></div>
+          <div class="field"><label for="a-address">Street address <span class="optional">Optional</span></label><input id="a-address" class="text" maxlength="120" autocomplete="off"></div>
+        </div>
+        <p class="cal-preview" id="a-preview"></p>
+        <div class="save-bar">
+          <p id="cal-status" class="status" role="status"></p>
+          <button id="a-save" class="btn" type="submit">Add dates</button>
+        </div>
+      </form>
+    </section>
+
+    <section id="view-email" aria-labelledby="email-title" hidden>
+      <form id="email-form" class="card" novalidate>
+        <h2 id="email-title">Send an email</h2>
+        <fieldset class="to">
+          <legend>To</legend>
+          <label class="check"><input type="radio" name="to" value="lineup" checked><span><b>This month's lineup</b><span id="to-lineup"></span></span></label>
+          <label class="check"><input type="radio" name="to" value="mailing"><span><b>The mailing list</b><span id="to-mailing"></span></span></label>
+        </fieldset>
+        <div class="field">
+          <label for="m-subject">Subject</label>
+          <input id="m-subject" class="text" maxlength="200" autocomplete="off">
+        </div>
+        <div class="field">
+          <label for="m-message">Message</label>
+          <textarea id="m-message" class="text" rows="12"></textarea>
+          <p class="hint" id="m-words"></p>
+        </div>
+        <div class="save-bar">
+          <p id="email-status" class="status" role="status"></p>
+          <button id="email-test" class="btn ghost" type="button">Email me a test</button>
+          <button id="email-send" class="btn" type="submit">Send</button>
+        </div>
+      </form>
+    </section>
+
     <section id="view-posters" aria-label="Posters" hidden>
+      <p id="poster-loading" class="app-loading" role="status" hidden><span class="jog" aria-hidden="true"></span>Loading the posters…</p>
       <iframe id="poster-frame" class="poster-frame" title="Posters"></iframe>
     </section>
   </div>
@@ -493,7 +647,7 @@ const CONFIG = {
 
 // Your admin password stays on this device until you press "Lock this page".
 const KEY_STORAGE = 'admin-key';
-const VIEWS = ['menu', 'code', 'qr', 'signups', 'settings', 'posters'];
+const VIEWS = ['menu', 'code', 'qr', 'signups', 'calendar', 'settings', 'email', 'posters'];
 
 const $ = (id) => document.getElementById(id);
 const editor = $('editor');
@@ -578,12 +732,16 @@ function route() {
   const name = location.hash.slice(1);
   state.view = VIEWS.includes(name) ? name : 'menu';
   for (const view of VIEWS) $(`view-${view}`).hidden = view !== state.view;
+  if (state.data) appear($(`view-${state.view}`));
   $('back').hidden = state.view === 'menu';
   $('wrap').classList.toggle('wide', state.view === 'posters');
   // Settings always opens with what's in the sheet now.
   state.settingsEdited = false;
   $('settings-status').textContent = '';
-  if (state.view === 'posters' && !$('poster-frame').src) $('poster-frame').src = 'poster?embedded';
+  if (state.view === 'posters' && !$('poster-frame').src) {
+    $('poster-loading').hidden = false;
+    $('poster-frame').src = 'poster?embedded';
+  }
   if (state.data) render();
   // Fresh numbers whenever you open the code or the sign-ups.
   if (state.data && ['code', 'qr', 'signups', 'settings'].includes(state.view)) load();
@@ -595,7 +753,8 @@ function render() {
   $('lock').hidden = true;
   $('app').hidden = false;
   $('eyebrow').textContent = {
-    menu: 'Admin', code: 'Admin · Code', qr: 'Admin · QR code', signups: 'Admin · Sign-ups', settings: 'Admin · Settings', posters: 'Admin · Posters',
+    menu: 'Admin', code: 'Admin · Code', qr: 'Admin · QR code', signups: 'Admin · Sign-ups', settings: 'Admin · Settings',
+    email: 'Admin · Send an email', posters: 'Admin · Posters', calendar: 'Admin · Calendar',
   }[state.view];
   $('title').textContent = data.event.session ? `Session ${data.event.session}` : data.event.name;
   $('date').textContent = data.event.date;
@@ -618,6 +777,8 @@ function render() {
   $('code-updated').textContent = `Checked at ${clock()}`;
 
   renderSignUps();
+  renderEmail();
+  renderCalendar();
   if (state.view === 'settings' && !state.settingsEdited) showSettings();
 }
 
@@ -662,12 +823,22 @@ function renderSignUps() {
 // ---- Talking to the sheet --------------------------------------------------
 
 // Handles what comes back from any admin call. False when it didn't work.
+// Eases in something that's just appeared after loading, like the sign-up panel opening does.
+function appear(node) {
+  if (!node || matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  node.animate([{ opacity: 0, transform: 'translateY(0.5rem)' }, { opacity: 1, transform: 'none' }],
+    { duration: 320, easing: 'cubic-bezier(0.2, 0.8, 0.2, 1)' });
+}
+
 function took(data) {
   if (data.ok) {
+    const fresh = $('app').hidden;
     state.data = data;
     state.loadedAt = Date.now();
     $('app-error').textContent = '';
     render();
+    // The page appearing after "Opening admin…" or the password.
+    if (fresh) appear($('app'));
     return true;
   }
   if (data.code === 'key') {
@@ -682,6 +853,8 @@ async function load(action = 'admin') {
   if (!state.key) return showLock();
   if (state.loading && action === 'admin') return;
   state.loading = true;
+  // Nothing on screen yet (opening the page with a saved password): show it's on its way.
+  if (!state.data) $('app-loading').hidden = false;
   const asked = state.key;
   try {
     const data = await ask(action);
@@ -694,6 +867,7 @@ async function load(action = 'admin') {
     else showLock("Couldn't reach the sign-up sheet. Check your connection and try again.");
   } finally {
     state.loading = false;
+    $('app-loading').hidden = true;
   }
 }
 
@@ -773,14 +947,19 @@ function openEditor(slot) {
   f.performanceName.focus();
 }
 
-function editorBusy(busy) {
+function editorBusy(busy, button, label) {
   state.editorBusy = busy;
-  for (const button of editor.querySelectorAll('button')) button.disabled = busy;
+  for (const b of editor.querySelectorAll('button')) b.disabled = busy;
+  if (button && busy) {
+    button.dataset.label = button.textContent;
+    showLoading(button, label);
+  } else if (button) button.textContent = button.dataset.label;
 }
 
 async function change(action, extra) {
   const { slot, tab } = state.editing;
-  editorBusy(true);
+  const button = $(action === 'remove' ? 'editor-remove' : 'editor-save');
+  editorBusy(true, button, action === 'remove' ? 'Removing…' : 'Saving…');
   let data;
   try {
     data = await ask(action, { tab, slotId: slot.id, ...extra });
@@ -788,7 +967,7 @@ async function change(action, extra) {
     console.error(err);
     data = { ok: false, message: "Couldn't reach the sheet. Check your connection and try again." };
   }
-  editorBusy(false);
+  editorBusy(false, button);
   if (took(data)) {
     editor.close();
     return;
@@ -836,7 +1015,8 @@ editor.addEventListener('cancel', (event) => {
 // ---- Settings ---------------------------------------------------------------
 
 // The Settings form's boxes and tick boxes, by the name the sheet's data uses.
-const TEXT_SETTINGS = ['eventName', 'session', 'eventDay', 'posterPage', 'mailingLink', 'reminderSubject', 'reminderMessage'];
+const TEXT_SETTINGS = ['eventName', 'session', 'eventDay', 'posterPage', 'mailingLink', 'confirmMessage', 'openSubject', 'openMessage',
+  'fullSubject', 'fullMessage', 'reminderSubject', 'reminderMessage'];
 const TICK_SETTINGS = ['open', 'oneSlotPerEmail', 'emailOwner', 'confirm', 'cancelByReply', 'emailFull', 'emailList', 'remind'];
 
 function showSettings() {
@@ -909,11 +1089,350 @@ $('test-reminder').addEventListener('click', async () => {
     : data.message || 'Something went wrong. Try again.';
 });
 
+// Emails you one of the automatic emails, with the saved wording.
+for (const button of document.querySelectorAll('[data-test]')) {
+  button.addEventListener('click', async () => {
+    if (button.disabled) return;
+    const label = button.textContent;
+    button.disabled = true;
+    showLoading(button, 'Sending…');
+    let data;
+    try {
+      data = await ask('test-email', { which: button.dataset.test });
+    } catch (err) {
+      console.error(err);
+      data = { ok: false, message: "Couldn't reach the sheet. Check your connection and try again." };
+    }
+    button.disabled = false;
+    button.textContent = label;
+    if (!data.ok && data.code === 'key') return took(data);
+    $('test-email-note').textContent = data.ok
+      ? `Sent to ${data.sentTo}. It uses the saved wording.`
+      : data.message || 'Something went wrong. Try again.';
+  });
+}
+
+// ---- Calendar -------------------------------------------------------------------
+
+const WEEKDAY_NAMES = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+const MONTH_SHORT = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+// Dates as 'yyyy-mm-dd', worked out in UTC so time zones and clock changes never shift a day.
+const asDate = (day) => new Date(`${day}T00:00:00Z`);
+const asDay = (date) => date.toISOString().slice(0, 10);
+const prettyDay = (day) => {
+  const d = asDate(day);
+  return `${WEEKDAY_NAMES[d.getUTCDay()].slice(0, 3)}, ${MONTH_SHORT[d.getUTCMonth()]} ${d.getUTCDate()}, ${d.getUTCFullYear()}`;
+};
+const placeText = (s) => [s.venue, s.address, s.city].filter(Boolean).join(' · ');
+state.calendarEditing = null;
+
+function renderCalendar() {
+  const cal = state.data.calendar;
+  if (!cal) return;
+  const left = cal.shows.length;
+  $('menu-calendar-sub').textContent = left
+    ? `${left} date${left === 1 ? '' : 's'}, up to ${prettyDay(cal.shows[left - 1].day)}`
+    : 'No dates yet';
+  // Don't redraw under someone who's editing a date.
+  if (state.calendarEditing) return;
+  const list = $('cal-list');
+  list.replaceChildren(...cal.shows.map((show) => {
+    const row = el('li', 'cal-row');
+    const top = el('div', 'cal-top');
+    const when = el('div', 'cal-when');
+    const title = el('b', '', `${show.session ? `Session ${show.session} · ` : ''}${prettyDay(show.day)}`);
+    if (show.next) title.append(el('span', 'cal-badge', 'Next show'));
+    when.append(title, el('span', '', placeText(show)));
+    const actions = el('div', 'cal-actions');
+    const edit = el('button', 'btn ghost small', 'Change');
+    edit.type = 'button';
+    edit.addEventListener('click', () => openCalendarEdit(row, show));
+    const remove = el('button', 'btn ghost small', 'Take off');
+    remove.type = 'button';
+    remove.addEventListener('click', () => removeDate(show, remove));
+    actions.append(edit, remove);
+    top.append(when, actions);
+    row.append(top);
+    return row;
+  }));
+  $('cal-hint').classList.toggle('cal-warn', left < 3);
+  $('cal-hint').textContent = left < 3
+    ? `Only ${left} date${left === 1 ? '' : 's'} left. Add more below. (If it runs out, the next show goes on the 2nd Wednesday.)`
+    : 'The first one is the next show: sign-ups are for it. Session numbers count up from it, so they change when you add or take off a date.';
+  // The add form starts after the last date, at the same place.
+  if (!$('a-start').value || $('a-start').dataset.auto === 'yes') {
+    const last = cal.shows[left - 1];
+    const start = last ? nextLikeRule(last.day) : cal.today;
+    $('a-start').value = start;
+    $('a-start').dataset.auto = 'yes';
+    matchStart();
+  }
+  if (!$('a-venue').value) {
+    $('a-venue').value = cal.location.venue;
+    $('a-city').value = cal.location.city;
+    $('a-address').value = cal.location.address || '';
+  }
+  previewDates();
+}
+
+// The same weekday-of-the-month as `day`, a month on (the 2nd Wednesday after a 2nd Wednesday).
+function nextLikeRule(day) {
+  const d = asDate(day);
+  const nth = Math.ceil(d.getUTCDate() / 7);
+  return nthWeekday(d.getUTCFullYear(), d.getUTCMonth() + 1, nth > 4 ? -1 : nth, d.getUTCDay()) || asDay(new Date(d.getTime() + 28 * 864e5));
+}
+
+// The nth (1–4, or -1 for the last) `weekday` of a month, as 'yyyy-mm-dd'. Month may run past 11.
+function nthWeekday(year, month, nth, weekday) {
+  if (nth === -1) {
+    const last = new Date(Date.UTC(year, month + 1, 0));
+    return asDay(new Date(last.getTime() - ((last.getUTCDay() - weekday + 7) % 7) * 864e5));
+  }
+  const first = new Date(Date.UTC(year, month, 1));
+  const date = 1 + ((weekday - first.getUTCDay() + 7) % 7) + 7 * (nth - 1);
+  const result = new Date(Date.UTC(year, month, date));
+  return result.getUTCMonth() === ((month % 12) + 12) % 12 ? asDay(result) : null;
+}
+
+// The repeat settings follow the first date: its weekday, and which one of the month it is.
+function matchStart() {
+  const day = $('a-start').value;
+  if (!day) return;
+  const d = asDate(day);
+  $('a-weekday').value = String(d.getUTCDay());
+  const nth = Math.ceil(d.getUTCDate() / 7);
+  const isLast = d.getUTCDate() + 7 > new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth() + 1, 0)).getUTCDate();
+  $('a-nth').value = nth > 4 || (isLast && nth === 5) ? '-1' : String(nth);
+  $('a-weekday-name').textContent = `${WEEKDAY_NAMES[d.getUTCDay()]}s`;
+}
+
+// Every date the form describes, up to 60.
+function repeatDates() {
+  const start = $('a-start').value;
+  if (!start) return [];
+  const kind = $('a-repeat').value;
+  if (kind === 'once') return [start];
+  const byCount = document.querySelector('#a-ends input[name="ends"]:checked').value === 'count';
+  const count = Math.min(60, Math.max(1, Number($('a-count').value) || 1));
+  const until = $('a-until').value;
+  const days = [];
+  const done = (day) => (byCount ? days.length >= count : !until || day > until || days.length >= 60);
+  if (kind === 'weekly') {
+    const step = Number($('a-weeks').value) * 7 * 864e5;
+    for (let t = asDate(start).getTime(); ; t += step) {
+      const day = asDay(new Date(t));
+      if (done(day)) break;
+      days.push(day);
+    }
+    return days;
+  }
+  const nth = Number($('a-nth').value);
+  const weekday = Number($('a-weekday').value);
+  const every = Number($('a-months').value);
+  const s = asDate(start);
+  for (let m = 0; m < 240; m += every) {
+    const day = nthWeekday(s.getUTCFullYear(), s.getUTCMonth() + m, nth, weekday);
+    if (!day || day < start) continue;
+    if (done(day)) break;
+    days.push(day);
+  }
+  return days;
+}
+
+function previewDates() {
+  if (!state.data || !state.data.calendar) return;
+  const kind = $('a-repeat').value;
+  $('a-weekly').hidden = kind !== 'weekly';
+  $('a-monthly').hidden = kind !== 'monthly';
+  $('a-ends').hidden = kind === 'once';
+  const have = new Set(state.data.calendar.shows.map((s) => s.day));
+  const days = repeatDates();
+  const fresh = days.filter((d) => !have.has(d));
+  $('a-save').textContent = fresh.length ? `Add ${fresh.length} date${fresh.length === 1 ? '' : 's'}` : 'Add dates';
+  $('a-save').disabled = !fresh.length;
+  const preview = $('a-preview');
+  if (!days.length) { preview.textContent = 'Pick a first date.'; return; }
+  preview.replaceChildren(el('b', '', fresh.length ? 'These go on the calendar: ' : 'All of these are on the calendar already: '),
+    days.map((d) => prettyDay(d) + (have.has(d) ? ' (already on it)' : '')).join(' · '));
+}
+
+for (const id of ['a-repeat', 'a-weeks', 'a-nth', 'a-weekday', 'a-months', 'a-count', 'a-until']) $(id).addEventListener('input', previewDates);
+$('a-start').addEventListener('input', () => { $('a-start').dataset.auto = 'no'; matchStart(); previewDates(); });
+for (const radio of document.querySelectorAll('#a-ends input[name="ends"]')) radio.addEventListener('change', previewDates);
+$('a-until').addEventListener('input', () => { document.querySelector('#a-ends input[value="until"]').checked = true; previewDates(); });
+$('a-count').addEventListener('input', () => { document.querySelector('#a-ends input[value="count"]').checked = true; });
+
+function calendarStatus(text, kind = '') {
+  $('cal-status').textContent = text;
+  $('cal-status').className = `status ${kind}`;
+}
+
+async function calendarCall(action, extra, button, label) {
+  const before = button.textContent;
+  button.disabled = true;
+  showLoading(button, label);
+  let data;
+  try {
+    data = await ask(action, extra);
+  } catch (err) {
+    console.error(err);
+    data = { ok: false, message: "Couldn't reach the sheet. Check your connection and try again." };
+  }
+  button.disabled = false;
+  button.textContent = before;
+  if (!data.ok && data.code === 'key') { took(data); return null; }
+  return data;
+}
+
+$('cal-add').addEventListener('submit', async (event) => {
+  event.preventDefault();
+  const days = repeatDates();
+  if (!days.length) return calendarStatus('Pick a first date.', 'bad');
+  const data = await calendarCall('calendar-add', {
+    days, venue: $('a-venue').value, city: $('a-city').value, address: $('a-address').value,
+  }, $('a-save'), 'Adding…');
+  if (!data) return;
+  if (!data.ok) return calendarStatus(data.message || 'Something went wrong. Try again.', 'bad');
+  const added = data.calendarChanged.added;
+  $('a-start').dataset.auto = 'yes';
+  took(data);
+  calendarStatus(`Added ${added} date${added === 1 ? '' : 's'}.`, 'ok');
+});
+
+function openCalendarEdit(row, show) {
+  if (state.calendarEditing) return;
+  state.calendarEditing = show.day;
+  const form = el('form', 'cal-edit');
+  form.noValidate = true;
+  form.innerHTML = `
+    <div class="cal-grid">
+      <div class="field"><label>Date</label><input name="day" class="text" type="date"></div>
+      <div class="field"><label>Venue</label><input name="venue" class="text" maxlength="80"></div>
+      <div class="field"><label>City</label><input name="city" class="text" maxlength="80"></div>
+      <div class="field"><label>Street address <span class="optional">Optional</span></label><input name="address" class="text" maxlength="120"></div>
+    </div>
+    <p class="error" role="alert"></p>
+    <div class="cal-actions" style="margin-top: 0.75rem"><button class="btn small" type="submit">Save</button><button class="btn ghost small" type="button" data-cancel>Cancel</button></div>`;
+  const f = form.elements;
+  f.day.value = show.day;
+  f.venue.value = show.venue;
+  f.city.value = show.city;
+  f.address.value = show.address || '';
+  if (show.next) form.prepend(el('p', 'hint', 'This is the next show: moving it moves the sign-ups and emails with it. Everyone signed up stays on the lineup.'));
+  form.querySelector('[data-cancel]').addEventListener('click', () => { state.calendarEditing = null; renderCalendar(); });
+  form.addEventListener('submit', async (event) => {
+    event.preventDefault();
+    const button = form.querySelector('button[type="submit"]');
+    const data = await calendarCall('calendar-update', {
+      day: show.day, newDay: f.day.value, venue: f.venue.value, city: f.city.value, address: f.address.value,
+    }, button, 'Saving…');
+    if (!data) return;
+    if (!data.ok) { form.querySelector('.error').textContent = data.message || 'Something went wrong. Try again.'; return; }
+    state.calendarEditing = null;
+    took(data);
+  });
+  row.append(form);
+  appear(form);
+  f.day.focus();
+}
+
+async function removeDate(show, button) {
+  const message = show.next
+    ? `Take off the next show (${prettyDay(show.day)})? The date after it becomes the next show, and everyone signed up stays on the lineup for it.`
+    : `Take ${prettyDay(show.day)} off the calendar? The session numbers after it go down by one.`;
+  if (!confirm(message)) return;
+  $('cal-error').textContent = '';
+  const data = await calendarCall('calendar-remove', { day: show.day }, button, 'Taking off…');
+  if (!data) return;
+  if (!data.ok) { $('cal-error').textContent = data.message || 'Something went wrong. Try again.'; return; }
+  took(data);
+}
+
+// ---- Send an email -------------------------------------------------------------
+
+const DRAFT_STORAGE = 'admin-email-draft';
+const emailTo = () => document.querySelector('#email-form input[name="to"]:checked').value;
+// This month's lineup, one each, with an email address (as the sheet sends to them).
+function lineupEmails() {
+  return new Set(state.data.lineup.filter((s) => s.booked && /\S+@\S+\.\S+/.test(s.email || '')).map((s) => s.email.trim().toLowerCase()));
+}
+function renderEmail() {
+  const lineup = lineupEmails().size;
+  const mailing = state.data.mailingList || 0;
+  const people = (n) => `${n} ${n === 1 ? 'person' : 'people'}`;
+  $('to-lineup').textContent = `${people(lineup)} with an email address. Each gets it with their own name and set time.`;
+  $('to-mailing').textContent = `${people(mailing)}. An unsubscribe link is added at the end. A long list finishes over a day or two (Google's daily limit).`;
+  const n = emailTo() === 'lineup' ? lineup : mailing;
+  if (!state.emailBusy) $('email-send').textContent = `Send to ${people(n)}`;
+  $('email-send').disabled = state.emailBusy || !n;
+  $('m-words').textContent = emailTo() === 'lineup'
+    ? 'Words in {curly brackets} are filled in for each person: {name}, {performance name}, {time}, {room}, {date}, {event}, {session} and {link}.'
+    : 'Words in {curly brackets} are filled in: {event name}, {event}, {date}, {session} and {link} (the sign-up page).';
+}
+function emailStatus(text, kind = '') {
+  $('email-status').textContent = text;
+  $('email-status').className = `status ${kind}`;
+}
+// Your draft stays on this device until it's sent.
+try {
+  const draft = JSON.parse(localStorage.getItem(DRAFT_STORAGE) || 'null');
+  if (draft) {
+    $('m-subject').value = draft.subject || '';
+    $('m-message').value = draft.message || '';
+    const to = document.querySelector(`#email-form input[name="to"][value="${draft.to}"]`);
+    if (to) to.checked = true;
+  }
+} catch {}
+$('email-form').addEventListener('input', () => {
+  emailStatus('');
+  try {
+    localStorage.setItem(DRAFT_STORAGE, JSON.stringify({ to: emailTo(), subject: $('m-subject').value, message: $('m-message').value }));
+  } catch {}
+  if (state.data) renderEmail();
+});
+async function sendEmail(test) {
+  const subject = $('m-subject').value.trim();
+  const message = $('m-message').value.trim();
+  if (!subject) { emailStatus('Give it a subject.', 'bad'); $('m-subject').focus(); return; }
+  if (!message) { emailStatus('Write a message.', 'bad'); $('m-message').focus(); return; }
+  const to = emailTo();
+  const count = to === 'lineup' ? lineupEmails().size : state.data.mailingList || 0;
+  const who = to === 'lineup' ? "this month's lineup" : 'the mailing list';
+  if (!test && !confirm(`Send "${subject}" to ${count} ${count === 1 ? 'person' : 'people'} on ${who}? This can't be undone.`)) return;
+  const button = $(test ? 'email-test' : 'email-send');
+  const label = button.textContent;
+  state.emailBusy = true;
+  $('email-test').disabled = $('email-send').disabled = true;
+  showLoading(button, test ? 'Sending a test…' : 'Sending…');
+  let data;
+  try {
+    data = await ask('send-message', { to, subject, message, test });
+  } catch (err) {
+    console.error(err);
+    data = { ok: false, message: "Couldn't reach the sheet. Check your connection and try again." };
+  }
+  state.emailBusy = false;
+  $('email-test').disabled = false;
+  button.textContent = label;
+  if (state.data) renderEmail();
+  if (!data.ok && data.code === 'key') return took(data);
+  if (!data.ok) return emailStatus(data.message || 'Something went wrong. Try again.', 'bad');
+  if (data.test) return emailStatus(`Sent a test to ${data.sentTo}.`, 'ok');
+  try { localStorage.removeItem(DRAFT_STORAGE); } catch {}
+  emailStatus(data.left
+    ? `Sent to ${data.sent} of ${data.total}. The other ${data.left} go out by themselves as Google's daily limit allows, usually within a day.`
+    : `Sent to ${data.sent} ${data.sent === 1 ? 'person' : 'people'}.`, 'ok');
+}
+$('email-form').addEventListener('submit', (event) => { event.preventDefault(); if (!state.emailBusy) sendEmail(false); });
+$('email-test').addEventListener('click', () => { if (!state.emailBusy) sendEmail(true); });
+
 // ---- Posters ----------------------------------------------------------------
 
 // The poster page sits in the admin page at its full height, so there's only one scrollbar.
 $('poster-frame').addEventListener('load', () => {
   const frame = $('poster-frame');
+  $('poster-loading').hidden = true;
+  appear(frame);
   const doc = frame.contentDocument;
   if (!doc) return;
   const fit = () => { frame.style.height = `${doc.documentElement.scrollHeight}px`; };
@@ -927,7 +1446,7 @@ addEventListener('message', async (e) => {
   if (e.source !== frame.contentWindow || !e.data || !('ctodPosterColor' in e.data)) return;
   let reply;
   try {
-    const data = await ask('poster-color', { shift: e.data.ctodPosterColor });
+    const data = await ask('poster-color', { shift: e.data.ctodPosterColor, saturation: e.data.saturation, brightness: e.data.brightness });
     if (data.code === 'key') return showLock(data.message);
     reply = { ctodPosterColorSaved: Boolean(data.ok), message: data.ok ? '' : data.message };
   } catch (err) {

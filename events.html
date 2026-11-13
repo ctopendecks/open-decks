@@ -205,15 +205,27 @@ function monthDay(day) {
 // "8:00 PM" → "8 PM"
 const shortTime = (time) => time.replace(':00', '');
 
-// The venue, in full on bigger screens and short in compact rows.
-function venueLine() {
+// Where the show is, from the Calendar: in full on bigger screens and short in compact rows.
+// (CONFIG.venue is only used if the sheet doesn't say.)
+function venueLine(show) {
   const where = el('p', 'where');
-  where.append(el('span', 'long', CONFIG.venue), el('span', 'short', CONFIG.venueShort));
+  const long = show.venue ? `${show.venue} · ${show.address ? `${show.address}, ` : ''}${show.city} · 21+` : CONFIG.venue;
+  const short = show.venue ? `${show.venue} · ${show.city} · 21+` : CONFIG.venueShort;
+  where.append(el('span', 'long', long), el('span', 'short', short));
   return where;
 }
 
+// Eases in something that's just appeared after loading, like the sign-up panel opening does.
+function appear(node) {
+  if (!node || matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  node.animate([{ opacity: 0, transform: 'translateY(0.5rem)' }, { opacity: 1, transform: 'none' }],
+    { duration: 320, easing: 'cubic-bezier(0.2, 0.8, 0.2, 1)' });
+}
+
 function render(data) {
+  const fresh = document.querySelector('.wrap').classList.contains('loading');
   document.querySelector('.wrap').classList.remove('loading');
+  if (fresh) requestAnimationFrame(() => appear($('message').hidden ? $('shows') : $('message')));
   $('message').hidden = true;
   const list = $('shows');
   list.removeAttribute('aria-busy');
@@ -236,7 +248,7 @@ function render(data) {
     const when = el('p', 'when');
     when.append(el('span', 'long', show.date), el('span', 'short', `${show.date.slice(0, 3)}, ${month} ${date}`));
     if (show.start) when.append(el('span', 'time', shortTime(show.start)));
-    text.append(el('h2', 'session', show.session ? `Session ${show.session}` : data.name), when, venueLine());
+    text.append(el('h2', 'session', show.session ? `Session ${show.session}` : data.name), when, venueLine(show));
     item.append(day, text);
     return item;
   }));

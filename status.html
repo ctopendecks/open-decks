@@ -132,7 +132,9 @@ const CONFIG = {
   // The same Apps Script web app URL as index.html (it ends in /exec).
   apiUrl: 'https://script.google.com/macros/s/AKfycbwZntnJesyS-5fPQT9PHJyThZiSTxXhL__geIVGaDWVkGVpOe7ROJcwM9jBscPxTZfdYQ/exec',
   // Where the Sign up button goes: your website's sign-up page, or with ?form the sign-up form itself.
-  signupPage: 'https://www.ctopendecks.com/signup',
+  // On the new website (and its test address) that's its own Sign Up page. From the old GitHub
+  // address, which the Squarespace site embeds, it's www.ctopendecks.com/signup.
+  signupPage: location.hostname.endsWith('github.io') ? 'https://www.ctopendecks.com/signup' : new URL('/signup', location.href).href,
   signupForm: new URL('./', location.href).href,
   // How often it checks for changes while open, in minutes.
   refreshMinutes: 5,
@@ -163,8 +165,16 @@ function showDay(day) {
 
 // Worded like the sign-up page: open (slots left and a Sign up button), all slots filled
 // (next month opens in person at the show first), or closed.
+// Eases in something that's just appeared after loading, like the sign-up panel opening does.
+function appear(node) {
+  if (!node || matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  node.animate([{ opacity: 0, transform: 'translateY(0.5rem)' }, { opacity: 1, transform: 'none' }],
+    { duration: 320, easing: 'cubic-bezier(0.2, 0.8, 0.2, 1)' });
+}
+
 function render(next) {
   const box = $('status');
+  if (box.classList.contains('loading')) requestAnimationFrame(() => appear(box));
   const open = next && next.signups === 'open';
   box.className = open ? 'status open' : 'status';
   if (!next) {

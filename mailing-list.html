@@ -175,6 +175,13 @@ function showLoading(node, text) {
   node.replaceChildren(jog, text);
 }
 
+// Eases in something that's just appeared after loading, like the sign-up panel opening does.
+function appear(node) {
+  if (!node || matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  node.animate([{ opacity: 0, transform: 'translateY(0.5rem)' }, { opacity: 1, transform: 'none' }],
+    { duration: 320, easing: 'cubic-bezier(0.2, 0.8, 0.2, 1)' });
+}
+
 function showError(text) {
   $('error').textContent = text;
   $('email').setAttribute('aria-invalid', String(Boolean(text)));
@@ -225,6 +232,7 @@ $('form').addEventListener('submit', async (event) => {
   if (!data.ok) return showError(data.message || 'Something went wrong. Try again.');
   $('form').hidden = true;
   $('done').hidden = false;
+  appear($('done'));
   $('box').classList.add('done');
   fit();
 });

@@ -170,6 +170,7 @@
   .embedded .status { margin-top: 0; }
   .saved { margin: 0.75rem 0 0; min-height: 1.3em; font-size: 0.875rem; color: var(--muted); }
   .saved:empty { display: none; }
+  .saved .jog { width: 1.125rem; height: 1.125rem; margin: 0 0.5rem 0 0; vertical-align: -0.25em; }
   .saved.ok { color: var(--ok); }
   .saved.error { color: #ffd9d9; }
 
@@ -234,6 +235,10 @@
     <div class="fine">
       <label for="hue">Fine-tune</label>
       <input type="range" id="hue" min="0" max="359" step="1" value="0">
+      <label for="sat">Saturation</label>
+      <input type="range" id="sat" min="-100" max="100" step="1" value="0">
+      <label for="bright">Brightness</label>
+      <input type="range" id="bright" min="-100" max="100" step="1" value="0">
       <button type="button" class="link" id="auto" disabled>Use this month's</button>
     </div>
     <p class="saved" id="saved" role="status"></p>
@@ -346,7 +351,10 @@ const WEEKDAYS = ['SUNDAY', 'MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDA
 const MONTHS = ['JAN.', 'FEB.', 'MARCH', 'APRIL', 'MAY', 'JUNE', 'JULY', 'AUG.', 'SEPT.', 'OCT.', 'NOV.', 'DEC.'];
 
 const $ = (id) => document.getElementById(id);
-const state = { show: null, shift: 0, autoShift: 0, art: null, previews: {}, queued: false };
+// The background's look: the hue turn (shift), and saturation and brightness (-100 to 100, 0 = as it is).
+const state = { show: null, shift: 0, saturation: 0, brightness: 0, autoShift: 0, art: null, previews: {}, queued: false };
+const look = () => ({ shift: state.shift, saturation: state.saturation, brightness: state.brightness });
+const isAuto = () => state.shift === state.autoShift && !state.saturation && !state.brightness;
 
 // ---- Loading ----------------------------------------------------------------
 
@@ -388,6 +396,13 @@ async function loadArt() {
 }
 
 // ---- What goes on the posters ---------------------------------------------------
+
+// "STELLA BLUES - 204 CROWN ST." and "NEW HAVEN, CT - 21+", from where the show is on the Calendar.
+function addressLines(show) {
+  const where = show.location;
+  if (!where || !where.venue) return WORDING.address;
+  return [`${where.venue}${where.address ? ` - ${where.address}` : ''}`, `${where.city} - 21+`].map((line) => line.toUpperCase());
+}
 
 function ordinal(n) {
   const teen = n % 100 >= 11 && n % 100 <= 13;
@@ -540,15 +555,46 @@ function matchTones(art) {
   return match;
 }
 
-function swatchColor(shift) {
-  const [r, g, b] = shiftHue(Uint8ClampedArray.from([...BASE_COLOR, 255]), shift);
+// The month's colour on a background's pixels: the hue turned, then saturation and brightness moved
+// like Photoshop's Hue/Saturation sliders (+100 saturation is as vivid as it goes, -100 is grey;
+// +100 brightness is white, -100 is black). `look` is { shift, saturation, brightness } or just a turn.
+function recolor(data, look) {
+  const { shift = 0, saturation = 0, brightness = 0 } = typeof look === 'number' ? { shift: look } : look;
+  if (!saturation && !brightness) return shiftHue(data, shift);
+  const turn = (((shift % 360) + 360) % 360) / 60;
+  const sat = saturation / 100;
+  const light = brightness / 100;
+  for (let i = 0; i < data.length; i += 4) {
+    const r = data[i] / 255, g = data[i + 1] / 255, b = data[i + 2] / 255;
+    const max = r > g ? (r > b ? r : b) : (g > b ? g : b);
+    const min = r < g ? (r < b ? r : b) : (g < b ? g : b);
+    const chroma = max - min;
+    let l = (max + min) / 2;
+    let s = chroma ? chroma / (1 - Math.abs(2 * l - 1)) : 0;
+    let h = !chroma ? 0 : max === r ? (g - b) / chroma : max === g ? (b - r) / chroma + 2 : (r - g) / chroma + 4;
+    h = (h + turn + 6) % 6;
+    if (chroma) s = Math.min(1, sat > 0 ? s + (1 - s) * sat : s * (1 + sat));
+    l = light > 0 ? l + (1 - l) * light : l * (1 + light);
+    const c = (1 - Math.abs(2 * l - 1)) * s;
+    const x = c * (1 - Math.abs((h % 2) - 1));
+    const lo = l - c / 2;
+    const sector = h | 0;
+    data[i] = ((sector === 0 || sector === 5 ? c : sector === 1 || sector === 4 ? x : 0) + lo) * 255;
+    data[i + 1] = ((sector === 1 || sector === 2 ? c : sector === 0 || sector === 3 ? x : 0) + lo) * 255;
+    data[i + 2] = ((sector === 3 || sector === 4 ? c : sector === 2 || sector === 5 ? x : 0) + lo) * 255;
+  }
+  return data;
+}
+
+function swatchColor(look) {
+  const [r, g, b] = recolor(Uint8ClampedArray.from([...BASE_COLOR, 255]), look);
   return `rgb(${r}, ${g}, ${b})`;
 }
 
-// A background's pixels at w × h: matched to the post's colour (`match`), then turned by `shift`.
-// The previews redraw often, so their matched pixels are kept.
+// A background's pixels at w × h: matched to the post's colour (`match`), then given the month's
+// `look` (see recolor). The previews redraw often, so their matched pixels are kept.
 const pixelCache = new Map();
-function shiftedPixels(img, w, h, shift, keep, match) {
+function shiftedPixels(img, w, h, look, keep, match) {
   const key = `${img.src}@${w}x${h}`;
   let base = keep && pixelCache.get(key);
   if (!base) {
@@ -563,7 +609,7 @@ function shiftedPixels(img, w, h, shift, keep, match) {
     if (keep) pixelCache.set(key, base);
   }
   const out = keep ? new ImageData(new Uint8ClampedArray(base.data), w, h) : base;
-  shiftHue(out.data, shift);
+  recolor(out.data, look);
   return out;
 }
 
@@ -641,7 +687,7 @@ function drawRow(pen, p, texts, centers, y, size, look) {
   });
 }
 
-function drawPoster(ctx, kind, show, art, shift, scale, keepPixels) {
+function drawPoster(ctx, kind, show, art, look, scale, keepPixels) {
   const p = POSTERS[kind];
   const w = ctx.canvas.width;
   const h = ctx.canvas.height;
@@ -649,7 +695,7 @@ function drawPoster(ctx, kind, show, art, shift, scale, keepPixels) {
   const match = art.match && art.match[kind];
 
   // The background, in this month's colour.
-  ctx.putImageData(shiftedPixels(art[p.background], w, h, shift, keepPixels, match), 0, 0);
+  ctx.putImageData(shiftedPixels(art[p.background], w, h, look, keepPixels, match), 0, 0);
   ctx.setTransform(scale, 0, 0, scale, 0, 0);
   ctx.imageSmoothingQuality = 'high';
   ctx.drawImage(art[p.logo.src], p.logo.x, p.logo.y, p.logo.w, p.logo.h);
@@ -679,7 +725,7 @@ function drawPoster(ctx, kind, show, art, shift, scale, keepPixels) {
 
   drawBlock(pen, p, WORDING.taglines, p.taglines, yellow);
   drawBlock(pen, p, [dateLine(show)], p.date, white);
-  drawBlock(pen, p, WORDING.address, p.address, white);
+  drawBlock(pen, p, addressLines(show), p.address, white);
 
   if (p.remove) {
     const after = removeLine(show);
@@ -703,7 +749,7 @@ function drawPoster(ctx, kind, show, art, shift, scale, keepPixels) {
     const square = document.createElement('canvas');
     square.width = q.w;
     square.height = q.h;
-    square.getContext('2d').putImageData(shiftedPixels(art[q.background], q.w, q.h, shift, true, match), 0, 0);
+    square.getContext('2d').putImageData(shiftedPixels(art[q.background], q.w, q.h, look, true, match), 0, 0);
     ctx.drawImage(square, q.x, q.y, q.w, q.h);
     ctx.drawImage(art[q.src], q.x, q.y, q.w, q.h);
   }
@@ -744,10 +790,10 @@ function buildPage() {
     b.addEventListener('click', () => pickColor(c.shift));
     $('swatches').append(b);
   });
-  const stops = Array.from({ length: 13 }, (_, i) => swatchColor(i * 30));
-  $('hue').style.setProperty('--wheel', `linear-gradient(90deg, ${stops.join(', ')})`);
-  $('hue').addEventListener('input', (e) => pickColor(Number(e.target.value)));
-  $('auto').addEventListener('click', () => pickColor(state.autoShift));
+  $('hue').addEventListener('input', (e) => setLook({ shift: Number(e.target.value) }));
+  $('sat').addEventListener('input', (e) => setLook({ saturation: Number(e.target.value) }));
+  $('bright').addEventListener('input', (e) => setLook({ brightness: Number(e.target.value) }));
+  $('auto').addEventListener('click', () => setLook({ shift: state.autoShift, saturation: 0, brightness: 0 }));
   $('download-all').addEventListener('click', downloadAll);
 }
 
@@ -755,14 +801,26 @@ function sizeLabel(p) {
   return p.dpi ? `11 × 17 in at ${p.dpi} dpi` : `${p.width} × ${p.height}`;
 }
 
-function pickColor(shift) {
-  state.shift = ((shift % 360) + 360) % 360;
+const pickColor = (shift) => setLook({ shift });
+function setLook(changes) {
+  Object.assign(state, changes);
+  state.shift = ((state.shift % 360) + 360) % 360;
   try {
-    localStorage.setItem(colorKey(), String(state.shift));
+    localStorage.setItem(colorKey(), JSON.stringify(look()));
   } catch {}
   showColor();
   redraw();
   if (IN_ADMIN) saveColorSoon();
+}
+// What this device remembers picking for this session: { shift, saturation, brightness }, or null.
+// Older versions kept just the hue as a number.
+function savedLook() {
+  let saved = null;
+  try {
+    saved = JSON.parse(localStorage.getItem(colorKey()));
+  } catch {}
+  if (typeof saved === 'number') return { shift: saved, saturation: 0, brightness: 0 };
+  return saved && typeof saved.shift === 'number' ? { saturation: 0, brightness: 0, ...saved } : null;
 }
 
 // In the admin page, the color picked is saved for the website's poster once you stop changing it.
@@ -774,8 +832,12 @@ function saveColorSoon() {
   $('saved').className = 'saved';
   $('saved').textContent = '';
   saveTimer = setTimeout(() => {
-    $('saved').textContent = 'Saving for the website…';
-    parent.postMessage({ ctodPosterColor: state.shift === state.autoShift ? '' : state.shift }, location.origin);
+    showLoading($('saved'), 'Saving for the website…');
+    parent.postMessage({
+      ctodPosterColor: isAuto() ? '' : state.shift,
+      saturation: state.saturation,
+      brightness: state.brightness,
+    }, location.origin);
   }, 700);
 }
 addEventListener('message', (e) => {
@@ -791,9 +853,18 @@ function colorKey() {
 }
 
 function showColor() {
+  const now = look();
+  const at = (changes) => swatchColor({ ...now, ...changes });
   $('hue').value = state.shift;
-  $('hue').style.setProperty('--swatch', swatchColor(state.shift));
-  $('auto').disabled = state.shift === state.autoShift;
+  $('sat').value = state.saturation;
+  $('bright').value = state.brightness;
+  // Each slider's track shows what it does from where the others are now.
+  const hues = Array.from({ length: 13 }, (_, i) => at({ shift: i * 30 }));
+  $('hue').style.setProperty('--wheel', `linear-gradient(90deg, ${hues.join(', ')})`);
+  $('sat').style.setProperty('--wheel', `linear-gradient(90deg, ${at({ saturation: -100 })}, ${at({ saturation: 0 })}, ${at({ saturation: 100 })})`);
+  $('bright').style.setProperty('--wheel', `linear-gradient(90deg, ${at({ brightness: -100 })}, ${at({ brightness: 0 })}, ${at({ brightness: 100 })})`);
+  for (const id of ['hue', 'sat', 'bright']) $(id).style.setProperty('--swatch', swatchColor(now));
+  $('auto').disabled = isAuto();
   for (const b of $('swatches').children) {
     const shift = Number(b.dataset.shift);
     b.setAttribute('aria-checked', String(shift === state.shift));
@@ -801,7 +872,15 @@ function showColor() {
   }
 }
 
+// Eases in something that's just appeared after loading, like the sign-up panel opening does.
+function appear(node) {
+  if (!node || matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  node.animate([{ opacity: 0, transform: 'translateY(0.5rem)' }, { opacity: 1, transform: 'none' }],
+    { duration: 320, easing: 'cubic-bezier(0.2, 0.8, 0.2, 1)' });
+}
+
 // Redraws the previews once per frame at most, so dragging the slider stays smooth.
+let drawnOnce = false;
 function redraw() {
   if (state.queued || !state.art) return;
   state.queued = true;
@@ -809,8 +888,10 @@ function redraw() {
     state.queued = false;
     for (const kind of ORDER) {
       const { canvas, scale } = state.previews[kind];
-      drawPoster(canvas.getContext('2d'), kind, state.show, state.art, state.shift, scale, true);
+      drawPoster(canvas.getContext('2d'), kind, state.show, state.art, look(), scale, true);
     }
+    // The posters ease in the first time they're drawn.
+    if (!drawnOnce) { drawnOnce = true; appear($('posters')); }
   });
 }
 
@@ -823,7 +904,7 @@ async function render(kind) {
   canvas.height = p.height;
   const ctx = canvas.getContext('2d');
   if (!ctx) return null;
-  drawPoster(ctx, kind, state.show, state.art, state.shift, 1, false);
+  drawPoster(ctx, kind, state.show, state.art, look(), 1, false);
   const blob = await new Promise((resolve) => canvas.toBlob(resolve, 'image/jpeg', 0.95));
   canvas.width = canvas.height = 0;
   return blob && p.dpi ? withDpi(blob, p.dpi) : blob;
@@ -933,14 +1014,15 @@ async function start() {
   $('colors-hint').textContent += IN_ADMIN ? ' The poster on the website uses the color you pick here.'
     : ' To change the color of the poster on the website, pick it in Admin → Posters.';
   // The color picked in Admin → Posters comes first, then one picked on this device.
-  let saved = null;
-  try {
-    saved = localStorage.getItem(colorKey());
-  } catch {}
-  state.shift = typeof state.show.color === 'number' ? state.show.color
-    : saved !== null && saved !== '' && !isNaN(saved) ? Number(saved) : state.autoShift;
+  const saved = savedLook();
+  Object.assign(state, typeof state.show.color === 'number'
+    ? { shift: state.show.color, saturation: state.show.saturation || 0, brightness: state.show.brightness || 0 }
+    : saved || { shift: state.autoShift, saturation: 0, brightness: 0 });
   showColor();
   redraw();
+  // A color picked on this device before the website's poster could follow it: save it now, so the
+  // website shows what you see here.
+  if (IN_ADMIN && typeof state.show.color !== 'number' && !isAuto()) saveColorSoon();
   for (const kind of ORDER) state.previews[kind].button.disabled = false;
   $('download-all').disabled = false;
 }
@@ -952,14 +1034,17 @@ function startLive() {
   let drawn = '';
   const draw = () => {
     const show = state.show;
-    const shift = typeof show.color === 'number' ? show.color
-      : (show.event.session ? COLOR_FOR_SESSION(show.event.session) : COLORS[0]).shift;
-    const key = JSON.stringify([show, shift]);
+    const style = typeof show.color === 'number'
+      ? { shift: show.color, saturation: show.saturation || 0, brightness: show.brightness || 0 }
+      : { shift: (show.event.session ? COLOR_FOR_SESSION(show.event.session) : COLORS[0]).shift, saturation: 0, brightness: 0 };
+    const key = JSON.stringify([show, style]);
     if (key === drawn) return;
+    const first = !drawn;
     drawn = key;
-    state.shift = shift;
+    Object.assign(state, style);
     const { canvas } = state.previews.post;
-    drawPoster(canvas.getContext('2d'), 'post', show, state.art, shift, 1, true);
+    drawPoster(canvas.getContext('2d'), 'post', show, state.art, style, 1, true);
+    if (first) appear(canvas);
     const djs = show.slots.map((s) => `${startTime(s.time)} ${s.room}: ${s.dj || 'open slot'}`).join(', ');
     canvas.setAttribute('aria-label',
       `Poster for ${show.event.session ? 'Session ' + show.event.session : show.event.name}, ${show.event.date}. ${djs}.`);
